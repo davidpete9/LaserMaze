@@ -1,0 +1,6 @@
+bin/ 
+obj/
+.idea/
+LaserMaze.cbp
+LaserMaze.depend
+LaserMaze.layout
