@@ -4,3 +4,5 @@ obj/
 LaserMaze.cbp
 LaserMaze.depend
 LaserMaze.layout
+CMakeLists.txt
+cmake-build-debug/

@@ -6,9 +6,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include "MenuEngine.h"
-
-#define S_WIDTH 880
-#define S_HEIGHT 720
+#include "Constanses.h"
 
 int main(int argc, char *argv[]) {
     TTF_Init();
@@ -17,7 +15,7 @@ int main(int argc, char *argv[]) {
         SDL_Log("Nem indithato az SDL: %s", SDL_GetError());
         exit(1);
     }
-    SDL_Window *window = SDL_CreateWindow("SDL peldaprogram", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 880, 720, 0);
+    SDL_Window *window = SDL_CreateWindow("SDL peldaprogram", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, S_WIDTH, S_HEIGHT, 0);
     if (window == NULL) {
         SDL_Log("Nem hozhato letre az ablak: %s", SDL_GetError());
         exit(1);
@@ -28,8 +26,7 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
     SDL_RenderClear(renderer);
-
-    initializeMenu(renderer);
+    initializeMenu(renderer, mainMenu);
 
     return 0;
 }
