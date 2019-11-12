@@ -1,0 +1,7 @@
+#ifndef SETTINGSMENUCONTROL_H_INCLUDED
+#define SETTINGSMENUCONTROL_H_INCLUDED
+
+ButtonRect **createSettingsMenuButtons();
+
+
+#endif // SETTINGSMENUCONTROL_H_INCLUDED

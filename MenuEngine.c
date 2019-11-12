@@ -6,7 +6,9 @@
 #include <stdio.h>
 #include "MenuEngine.h"
 #include "MainMenuControl.h"
+#include "GameMenuControl.h"
 #include "Constanses.h"
+#include "SettingsMenuControl.h"
 
 const double DEFAULT_PADDING_RATIO = 0.02;
 const SDL_Color DEFAULT_TEXT_COLOR = {255, 255, 255, 255};
@@ -135,15 +137,6 @@ bool isClickedOnBtn(SDL_Rect *btnCord, int x, int y) {
     return btnCord->x <= x && btnCord->x + btnCord->w >= x && btnCord->y <= y && btnCord->y + btnCord->h >= y;
 }
 
-ButtonRect **createGameButtons() {
-    ButtonRect **gameBtns;
-    gameBtns = (ButtonRect **) malloc(2 * sizeof(ButtonRect));
-
-    gameBtns[0] = initBtn((SDL_Rect) {S_WIDTH / 2 - 75, S_HEIGHT / 2, 150, 50}, "Vissza a főmenübe", BACK_TO_MAIN_BTN);
-
-    return gameBtns;
-}
-
 void drawAllCurrentButtons(SDL_Renderer *renderer, ButtonRect **buttons, Page currentPage) {
     for (int i = 0; i < getCurrentButtonArraySize(currentPage); i++) {
         drawButton(renderer, buttons[i]);
@@ -174,21 +167,18 @@ int getClickedButtonIdIfExists(ButtonRect **buttons, Page currentPage, int x, in
  * @return Page next
  * */
 Page handleBtnClickAndGetNextPageIfShould(int currentButtonId, Page currentPage) {
+    if (currentButtonId == BACK_TO_MAIN_BTN) return mainMenu;
+
     switch (currentPage) {
         case mainMenu:
             return getNextPageOnMainMenuClickOrQuit(currentButtonId);
         case gameMenu:
-            if (currentButtonId == BACK_TO_MAIN_BTN) {
-                return mainMenu;
-            }
-        case settings:
-            break;
+            return clickedOnLevel(currentButtonId);
         case inGame:
-            break;
+        case settings:
         default:
-            break;
+            return mainMenu;
     }
-    return -1;
 }
 
 
@@ -204,6 +194,7 @@ void handleCursor(ButtonRect **buttons, int x, int y, Page currentPage) {
 
 void resetScreenAndFreeButtonsArray(SDL_Renderer *renderer, ButtonRect **buttons, Page currentPage) {
     for (int i = 0; i < getCurrentButtonArraySize(currentPage); i++) {
+        //todo free title!!
         free(buttons[i]);
     }
     free(buttons);
@@ -257,28 +248,19 @@ void initializeMenu(SDL_Renderer *renderer, Page currentPage) {
             buttons = createMainMenuButtons();
             break;
         case settings:
-            //buttons = createSettingsButtons();
+            buttons = createSettingsMenuButtons();
             break;
         case gameMenu:
-            buttons = createGameButtons();
+            buttons = createAllGameButton();
             break;
         case inGame:
-            //buttons = createInGameButtons();
+            buttons = createInGameButtons();
             break;
         default:
+            buttons = createMainMenuButtons();
             break;
     }
 
     drawAllCurrentButtons(renderer, buttons, currentPage);
     runMenu(renderer, buttons, currentPage);
-
 }
-
-
-
-
-
-
-
-
-

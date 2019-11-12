@@ -6,10 +6,12 @@ enum {
     SMALLEST_FONT_SIZE = 10,
     BIGGEST_FONT_SIZE = 48,
 
+    LEVEL_NUM = 15,
+
     M_BTN_NUM = 3,
     S_BTN_NUM = 3,
-    IG_BTN_NUM = 4,
-    G_BTN_NUM = 1,
+    IG_BTN_NUM = 5,
+    G_BTN_NUM = LEVEL_NUM+1,
 };
 
 enum {
@@ -54,22 +56,19 @@ typedef struct ButtonRect {
 
 } ButtonRect;
 
-ButtonRect **createGameButtons();
-ButtonRect **createMainMenuButtons();
 ButtonRect *initBtn(SDL_Rect pos, char *title, int id);
 int calculateSuitableFontSizeInBtn(SDL_Rect pos);
-void drawAllCurrentButtons(SDL_Renderer *renderer, ButtonRect ** buttons, Page currentPage);
+void drawAllCurrentButtons(SDL_Renderer *renderer, ButtonRect **buttons, Page currentPage);
 void drawButton(SDL_Renderer *renderer, ButtonRect *btn);
 int getClickedButtonIdIfExists(ButtonRect **buttons, Page currentPage, int x, int y);
 int getCurrentButtonArraySize(Page currentPage);
-Page getNextPageOnMainMenuClickOrQuit(int buttonId);
 Page handleBtnClickAndGetNextPageIfShould(int currentButtonId, Page currentPage);
-void handleCursor(ButtonRect ** buttons, int x, int y, Page currentPage);
-void initializeMenu(SDL_Renderer *renderer, Page page);
+void handleCursor(ButtonRect **buttons, int x, int y, Page currentPage);
+void initializeMenu(SDL_Renderer *renderer, Page currentPage);
 bool isClickedOnBtn(SDL_Rect *btnCord, int x, int y);
 int pxToPt(int px);
 void resetScreenAndFreeButtonsArray(SDL_Renderer *renderer, ButtonRect **buttons, Page currentPage);
-void runMenu(SDL_Renderer *renderer, ButtonRect **buttons, Page page);
+void runMenu(SDL_Renderer *renderer, ButtonRect **buttons, Page currentPage);
 void setBtnTitlePos(SDL_Rect *strPos, SDL_Rect pos);
 void writeTextToDisplay(SDL_Renderer *renderer, const StringToDisplay *strObj);
 
