@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include "MenuEngine.h"
 #include "Constanses.h"
+#include "ActualStateFileHandler.h"
 
 enum {
     LVL_BTN_W = 50,
@@ -22,12 +23,10 @@ enum {
 Page clickedOnLevel(int btnId) {
     //if not valid level just go to main menu by default
     if (btnId <= 0 || btnId > LEVEL_NUM) return mainMenu;
-    initalizeActualGameFile(btnId);
+
+    initializeFileWithLevel(btnId);
+
     return inGame;
-}
-
-void initalizeActualGameFile(int level) {
-
 }
 
 /**
@@ -51,7 +50,7 @@ ButtonRect **createAllGameButton() {
         gameBtns[k++] = initBtn((SDL_Rect) {
                                     left_margin+(j%BTNS_IN_ROW)*(LVL_BTN_W+btn_margin),
                                     top_margin+(i*(LVL_BTN_H+btn_margin))
-                                    ,LVL_BTN_W, LVL_BTN_W}, btn_title, i);
+                                    ,LVL_BTN_W, LVL_BTN_W}, btn_title, k);
         }
     }
 

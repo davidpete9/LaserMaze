@@ -4,4 +4,6 @@
 #define S_WIDTH 880
 #define S_HEIGHT 720
 
+
+
 #endif // CONSTANSES_H_INCLUDED

@@ -173,6 +173,7 @@ Page handleBtnClickAndGetNextPageIfShould(int currentButtonId, Page currentPage)
         case mainMenu:
             return getNextPageOnMainMenuClickOrQuit(currentButtonId);
         case gameMenu:
+            printf("\n%d\n", currentButtonId);
             return clickedOnLevel(currentButtonId);
         case inGame:
         case settings:
