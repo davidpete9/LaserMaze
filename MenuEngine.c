@@ -9,6 +9,7 @@
 #include "GameMenuControl.h"
 #include "Constanses.h"
 #include "SettingsMenuControl.h"
+#include "debugmalloc.h"
 
 const double DEFAULT_PADDING_RATIO = 0.02;
 const SDL_Color DEFAULT_TEXT_COLOR = {255, 255, 255, 255};
@@ -25,6 +26,8 @@ int getCurrentButtonArraySize(Page currentPage) {
             return IG_BTN_NUM;
         case gameMenu:
             return G_BTN_NUM;
+        default:
+            return 0;
     }
 }
 
@@ -173,7 +176,6 @@ Page handleBtnClickAndGetNextPageIfShould(int currentButtonId, Page currentPage)
         case mainMenu:
             return getNextPageOnMainMenuClickOrQuit(currentButtonId);
         case gameMenu:
-            printf("\n%d\n", currentButtonId);
             return clickedOnLevel(currentButtonId);
         case inGame:
         case settings:
@@ -256,6 +258,7 @@ void initializeMenu(SDL_Renderer *renderer, Page currentPage) {
             break;
         case inGame:
             buttons = createInGameButtons();
+            startGame();
             break;
         default:
             buttons = createMainMenuButtons();

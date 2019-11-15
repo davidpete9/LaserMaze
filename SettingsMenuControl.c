@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include "MenuEngine.h"
 #include "Constanses.h"
+#include "debugmalloc.h"
 
 ButtonRect **createSettingsMenuButtons() {
 

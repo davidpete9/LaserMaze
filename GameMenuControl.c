@@ -9,6 +9,7 @@
 #include "MenuEngine.h"
 #include "Constanses.h"
 #include "ActualStateFileHandler.h"
+#include "debugmalloc.h"
 
 enum {
     LVL_BTN_W = 50,

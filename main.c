@@ -7,6 +7,7 @@
 #include <stdbool.h>
 #include "MenuEngine.h"
 #include "Constanses.h"
+#include "debugmalloc.h"
 
 int main(int argc, char *argv[]) {
     TTF_Init();
@@ -26,7 +27,10 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
     SDL_RenderClear(renderer);
+
+
     initializeMenu(renderer, mainMenu);
+
 
     return 0;
 }

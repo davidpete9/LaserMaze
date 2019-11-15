@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include "MenuEngine.h"
 #include "Constanses.h"
+#include "debugmalloc.h"
 
 /**
  * Egy főmenübeli gombon való kattintást kezel le. A nextPage változóba jrja azt, hogy melyik a következő Page amit
@@ -18,7 +19,7 @@
 Page getNextPageOnMainMenuClickOrQuit(int buttonId) {
     switch (buttonId) {
         case M_EXIT_BTN:
-            exit(1);
+             exit(0);
         case M_GAME_BTN:
             return gameMenu;
         case M_SETTINGS_BTN:

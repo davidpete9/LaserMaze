@@ -38,7 +38,7 @@ enum {
 };
 
 typedef enum Page {
-    mainMenu, settings, gameMenu, inGame
+    mainMenu, settings, gameMenu, inGame, exitgame
 } Page;
 
 typedef struct StringToDisplay {
