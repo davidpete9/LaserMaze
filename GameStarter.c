@@ -27,6 +27,12 @@ char * generateFormattedStringFromNumber(int num, const char * format) {
         return formatted;
 }
 
+/** Visszatér az adott blokk textúrájával, amit fájlból töltött be.
+ * A hívó felelőssége ezt késöbb SDL_DestroyTexture()-rel törölni.
+ * @param SDL_Renderer *renderer,
+ * @param int blockId
+ * @return SDL_Texture * blockImg
+ * */
 SDL_Texture * getBlockTexture(SDL_Renderer *renderer, int blockId) {
     char *filename = generateFormattedStringFromNumber(blockId, BLOCKS_TEXTURE_FILENAME_FORMAT);
     SDL_Texture * blockImg = IMG_LoadTexture(renderer, filename);
@@ -34,6 +40,13 @@ SDL_Texture * getBlockTexture(SDL_Renderer *renderer, int blockId) {
     return blockImg;
 }
 
+/**
+ * Lerajzolja a játéktáblára a kapott blokkot, vagy a nagy táblára, vagy a jobb oldali mezőre.
+ * @param SDL_Renderer * renderer
+ * @param cJSON * block
+ * @param SDL_Rect DEST
+ * @param int GRID_COLS
+ * */
 void drawBlock(SDL_Renderer * renderer, cJSON * block, SDL_Rect DEST, int GRID_COLS) {
     int xCoord = cJSON_GetObjectItem(block, MAP_BLOCKS_COL)->valueint;
     int yCoord = cJSON_GetObjectItem(block, MAP_BLOCKS_ROW)->valueint;
@@ -53,6 +66,13 @@ void drawBlock(SDL_Renderer * renderer, cJSON * block, SDL_Rect DEST, int GRID_C
     }
 }
 
+/**
+ * Lerajzolja a az összes blokkot egy pályán, a nagy táblára, vagy a jobb oldali mezőre.
+ * @param SDL_Renderer * renderer
+ * @param cJSON * blocksArr
+ * @param SDL_Rect DEST_GRID
+ * @param int GRID_COLS
+ * */
 void placeBlocksToGrid(SDL_Renderer * renderer, cJSON * blocksArr, SDL_Rect DEST_GRID, int GRID_COLS) {
     for (int i = 0; i < cJSON_GetArraySize(blocksArr); i++) {
         cJSON *block = cJSON_GetArrayItem(blocksArr, i);
@@ -62,6 +82,12 @@ void placeBlocksToGrid(SDL_Renderer * renderer, cJSON * blocksArr, SDL_Rect DEST
 
 }
 
+/** Kiválasztja a megfelelő számú (5) darab pályát a szintfájlban tároltak közül.
+ *  Még nincsen kész teljesen.
+ * @param cJSON * allMap
+ * @param int * selectedNum
+ * @return cJSON *allMap
+ * */
 cJSON * selectRandomMaps(cJSON * allMap, int * selectedNum) {
     int length = cJSON_GetArraySize(allMap);
     if (length == 0) return NULL;
@@ -75,7 +101,12 @@ cJSON * selectRandomMaps(cJSON * allMap, int * selectedNum) {
     //TODO: SELECT RANDOM 5
 }
 
-cJSON * selectMapsForLevel(SDL_Renderer *renderer, int level) {
+/** Kiválasztja az összes pályát az adott szinthez.
+ * A hívónak kötelessége felszabadítani a lefoglalt memóriaterületet cJSON_Delete függvénnyel.
+ * @param int level
+ * @return cJSON * selectedMaps
+ * */
+cJSON * selectMapsForLevel(int level) {
      char * filename = generateFormattedStringFromNumber(level, MAPS_FILENAME_FORMAT);
      cJSON * allMap = getParsedJSONContentOfFile(filename);
      free(filename);
@@ -86,6 +117,10 @@ cJSON * selectMapsForLevel(SDL_Renderer *renderer, int level) {
      return selectedMaps;
 }
 
+/** Kirajzolja a játéktábla alapjait (négyzetrácsok, jobb oldali sáv)
+ * @param SDL_Renderer *renderer
+ * @pararm int level
+ * */
 void drawGameTable(SDL_Renderer *renderer, int level) {
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
     SDL_RenderDrawRect(renderer, &TABLE_RECT);
@@ -93,6 +128,9 @@ void drawGameTable(SDL_Renderer *renderer, int level) {
     drawGrid(renderer);
 }
 
+/** Kirajzolja a négyzetrácsokat.
+ * @pararm SDL_Renderer * renderer
+ * */
 void drawGrid(SDL_Renderer * renderer) {
     int squere_w = (int) TABLE_RECT.w/GRID_W;
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
@@ -103,15 +141,26 @@ void drawGrid(SDL_Renderer * renderer) {
         SDL_RenderDrawLine(renderer, RIGHT_SIDE_RECT.x, RIGHT_SIDE_RECT.y+(i*squere_w), RIGHT_SIDE_RECT.x+RIGHT_SIDE_RECT.w, RIGHT_SIDE_RECT.y+(i*squere_w));
     }
 }
-
+/**
+ * @param cJSON *structure
+ * @param bool val
+ * */
 void setGameInitalizationStatus(cJSON *structure, bool val) {
     cJSON_AddItemToObject(structure, IS_GAME_INITIALIZED, cJSON_CreateNumber(val ? 1 : 0));
 }
 
+/**
+ * @param cJSON *structure
+ * @param int level
+ * */
 void setLevel(cJSON *structure, int level) {
     cJSON_AddItemToObject(structure, LEVEL_STR, cJSON_CreateNumber((int)level));
 }
 
+
+/** Az actual.json fájlt létrehozza, és elmenti benne az aktuális levelt.
+ * @param int level
+ * */
 void initializeFileWithLevel(int level) {
     FILE *fp = createNewFile(ACTUAL_STATUS_FILE_NAME);
     cJSON * structure = cJSON_CreateObject();
@@ -137,7 +186,7 @@ bool startGame(SDL_Renderer *renderer) {
     int level = cJSON_GetObjectItem(currentData,LEVEL_STR)->valueint;
 
     if (!isGameInitialized) {
-        cJSON * maps = selectMapsForLevel(renderer, level);
+        cJSON * maps = selectMapsForLevel(level);
         if (maps == NULL) return false;
         drawGameTable(renderer, level);
         /*IDEIGLENES MEGOLDÁS, CSAK A FÉLKÉSZ ÁLLAPOTHOZ, HOGY KIRAJZOLJON EGY PÁLYÁT*/
