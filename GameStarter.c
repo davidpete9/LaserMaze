@@ -34,12 +34,12 @@ SDL_Texture * getBlockTexture(SDL_Renderer *renderer, int blockId) {
     return blockImg;
 }
 
-void drawBlock(SDL_Renderer * renderer, cJSON * block) {
+void drawBlock(SDL_Renderer * renderer, cJSON * block, SDL_Rect DEST, int GRID_COLS) {
     int xCoord = cJSON_GetObjectItem(block, MAP_BLOCKS_COL)->valueint;
     int yCoord = cJSON_GetObjectItem(block, MAP_BLOCKS_ROW)->valueint;
-    int squere_w = (int) TABLE_RECT.w/GRID_W;
+    int squere_w = (int) DEST.w/GRID_COLS;
 
-    SDL_Rect block_place = (SDL_Rect) {TABLE_RECT.x+(xCoord-1)*squere_w, TABLE_RECT.y+(yCoord-1)*squere_w, squere_w, squere_w};
+    SDL_Rect block_place = (SDL_Rect) {DEST.x+(xCoord-1)*squere_w, DEST.y+(yCoord-1)*squere_w, squere_w, squere_w};
     //SDL_SetRenderDrawColor(renderer, 0,255,0,255);
     SDL_Texture * imgTexture = getBlockTexture(renderer, cJSON_GetObjectItem(block, MAP_BLOCKS_ID)->valueint);
     if (!imgTexture) {
@@ -53,12 +53,13 @@ void drawBlock(SDL_Renderer * renderer, cJSON * block) {
     }
 }
 
-void placeBlocksToGrid(SDL_Renderer * renderer, cJSON * blocksArr) {
+void placeBlocksToGrid(SDL_Renderer * renderer, cJSON * blocksArr, SDL_Rect DEST_GRID, int GRID_COLS) {
     for (int i = 0; i < cJSON_GetArraySize(blocksArr); i++) {
         cJSON *block = cJSON_GetArrayItem(blocksArr, i);
-        drawBlock(renderer, block);
+        drawBlock(renderer, block, DEST_GRID, GRID_COLS);
         cJSON_Delete(block);
     }
+
 }
 
 cJSON * selectRandomMaps(cJSON * allMap, int * selectedNum) {
@@ -98,6 +99,8 @@ void drawGrid(SDL_Renderer * renderer) {
     for (int i = 1; i < GRID_W; i++) {
         SDL_RenderDrawLine(renderer, TABLE_RECT.x+(i*squere_w), TABLE_RECT.y, TABLE_RECT.x+(i*squere_w), TABLE_RECT.y+TABLE_RECT.h);
         SDL_RenderDrawLine(renderer, TABLE_RECT.x, TABLE_RECT.y+(i*squere_w), TABLE_RECT.x+TABLE_RECT.w, TABLE_RECT.y+(i*squere_w));
+
+        SDL_RenderDrawLine(renderer, RIGHT_SIDE_RECT.x, RIGHT_SIDE_RECT.y+(i*squere_w), RIGHT_SIDE_RECT.x+RIGHT_SIDE_RECT.w, RIGHT_SIDE_RECT.y+(i*squere_w));
     }
 }
 
@@ -140,7 +143,11 @@ bool startGame(SDL_Renderer *renderer) {
         /*IDEIGLENES MEGOLDÁS, CSAK A FÉLKÉSZ ÁLLAPOTHOZ, HOGY KIRAJZOLJON EGY PÁLYÁT*/
         cJSON *firstMap = cJSON_GetArrayItem(maps, 0);
         cJSON *firstMapBlockArr = cJSON_GetObjectItem(firstMap, MAP_BLOCKS_ARRAY);
-        placeBlocksToGrid(renderer, firstMapBlockArr);
+        placeBlocksToGrid(renderer, firstMapBlockArr, TABLE_RECT, GRID_W);
+        cJSON *rightSideBlockArr  = cJSON_GetObjectItem(firstMap, PLACEABLE_BLOCK_ARRAY);
+        placeBlocksToGrid(renderer, rightSideBlockArr, RIGHT_SIDE_RECT, 1);
+
+        cJSON_Delete(rightSideBlockArr);
         cJSON_Delete(firstMap);
         cJSON_Delete(firstMapBlockArr);
         SDL_RenderPresent(renderer);
