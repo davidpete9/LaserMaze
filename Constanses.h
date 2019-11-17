@@ -6,7 +6,6 @@
 
 extern const char *IS_GAME_INITIALIZED;
 extern const char *LEVEL_STR;
-extern const char *MAP_ARRAY;
 extern const char *MAP_ID;
 extern const char *MAP_BLOCKS_ARRAY;
 extern const char *MAP_BLOCKS_ID;
@@ -16,6 +15,7 @@ extern const char *MAP_BLOCKS_ROTATION;
 
 extern const char * ACTUAL_STATUS_FILE_NAME;
 extern const char * MAPS_FILENAME_FORMAT;
+extern const char * BLOCKS_TEXTURE_FILENAME_FORMAT;
 extern const SDL_Rect TABLE_RECT;
 
 enum {
@@ -29,11 +29,11 @@ enum {
 };
 
 enum {
-    GRID_W = 5,
-    GRID_H = 5,
-};
 
-enum {
+    BLOCK_TEXTURE_W = 110,
+
+    GRID_W = 5,
+    MAPS_IN_A_LEVEL = 5,
 
     SMALLEST_FONT_SIZE = 10,
     BIGGEST_FONT_SIZE = 48,
