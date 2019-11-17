@@ -11,10 +11,14 @@
 #include "cJSON.h"
 #include "debugmalloc.h"
 
+/** Létrehoz egy fájlt a paraméterként kapot néven.
+ * A hívó felelőssége bezáeni a fájlt az fclose() segítségével.
+ * @param const char *filename
+ * @return FILE *fp
+ */
 FILE *createNewFile(const char *filename) {
 
     FILE *fp;
-
     fp = fopen(filename, "wt");
     if (fp == NULL) {
         perror("Fájl megnyitása sikertelen");
@@ -24,23 +28,27 @@ FILE *createNewFile(const char *filename) {
     return fp;
 }
 
-//todo error handling
+//todo error handlig
 void printStructureIntoFileAndClose(FILE *fp, cJSON * structure) {
     fprintf(fp, cJSON_Print(structure));
     fclose(fp);
 }
 
-
+/** Megnyit egy fájlt a paraméteren kapott néven. Amennyiben sikertelen a megnyitás NULL pointer a visszatérési érték.
+ * A hívó felelőssége bezárni a fájlt az fclose segítségével.
+ * @param const char * filename
+ * @return FILE *fp
+ * */
 FILE * openFileForRead(const char *filename) {
     FILE * fp;
     fp = fopen(filename, "rt");
-    if (fp == NULL) {
-        perror("Fájl megnyitása sikertelen");
-        exit(1);
-    }
     return fp;
 }
 
+/** Megnézi, hogy hány karakterből áll a kapott fájl tartalma.
+ * @param FILE *fp
+ * @return int len
+ * */
 int getFileLength(FILE * fp) {
     fseek (fp, 0, SEEK_END);
     int len = ftell (fp);
@@ -48,33 +56,43 @@ int getFileLength(FILE * fp) {
     return len;
 }
 
-cJSON * readFileAndParseJson(FILE * fp) {
+/** Beolvassa a kapott fájl teljes tartalmát egy stringbe, Amennyiben az átalakítás sikertelen NULL pointerrel tér vissza.
+ * A hívó felelőssége felszabadítani a string számára lefoglalt memóriát.
+ * @param FILE *fp
+ * @return cJSON * parsed
+ * */
+char * readFileContent(FILE * fp) {
     int len = getFileLength(fp);
     if (len == 0) return NULL;
+
     char *dataString = (char *) malloc((len+1)*sizeof(char));
     dataString[0] = '\0';
+
     char * buffer = (char *) malloc((len+1)*sizeof(char));
+
     while (fscanf(fp, "%s", buffer) == 1) strcat(dataString, buffer);
     dataString[len] = '\0';
-    cJSON* parsed = cJSON_Parse(dataString);
-    free(dataString);
     free(buffer);
-    return parsed;
+    return dataString;
 }
 
 void printItForDebugging(cJSON *data) {
- printf("\n Az actual.json parsolva: \n  %s \n",cJSON_Print(data));
+ printf("\n %s \n",cJSON_Print(data));
 }
 
-/**
-cJSON_DELETE(data) to free
+/** Beolvassa a kapott JSON fájl teljes tartalmát, és cJSON struktúrává alakítja.
+ * Amennyiben az átalakítás sikertelen NULL pointerrel tér vissza. A hívó felelősség felszabadítani
+ * a cJSON struktúra által foglalt memóriát a cJSON_Delete() függvény segítségével.
+ * @param const char * filename
+ * @return cJSON * parsed
 */
-cJSON * getParsedJSONContentOfFile(char *filename) {
+cJSON * getParsedJSONContentOfFile(const char *filename) {
  FILE *fp = openFileForRead(filename);
- cJSON * data = readFileAndParseJson(fp);
- printItForDebugging(data);
+ char * dataString = readFileContent(fp);
+ cJSON* parsed = cJSON_Parse(dataString);
+ free(dataString);
  fclose(fp);
- return data;
+ return parsed;
 }
 
 

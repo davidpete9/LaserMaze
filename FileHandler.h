@@ -9,6 +9,6 @@ cJSON * getParsedJSONContentOfFile(char *filename);
 FILE * openFileForRead(const char *filename);
 void printItForDebugging(cJSON *data);
 void printStructureIntoFileAndClose(FILE *fp, cJSON * structure);
-cJSON * readFileAndParseJson(FILE * fp);
+char * readFileContent(FILE * fp);
 
 #endif // ACTUALSTATEFILEHANDLER_H_INCLUDED

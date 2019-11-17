@@ -30,7 +30,7 @@ int getClickedButtonIdIfExists(ButtonRect **buttons, Page currentPage, int x, in
 int getCurrentButtonArraySize(Page currentPage);
 Page handleBtnClickAndGetNextPageIfShould(int currentButtonId, Page currentPage);
 void handleCursor(ButtonRect **buttons, int x, int y, Page currentPage);
-int initializeMenu(SDL_Renderer *renderer, Page currentPage);
+void initializeMenu(SDL_Renderer *renderer, Page currentPage);
 bool isClickedOnBtn(SDL_Rect *btnCord, int x, int y);
 int pxToPt(int px);
 void resetScreenAndFreeButtonsArray(SDL_Renderer *renderer, ButtonRect **buttons, Page currentPage);

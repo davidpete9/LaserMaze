@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include "MenuEngine.h"
 #include "Constanses.h"
-#include "GameStarter.h"
+#include "GameStarter.c"
 #include "debugmalloc.h"
 
 enum {
@@ -21,26 +21,27 @@ enum {
     left_margin = (S_WIDTH-(BTNS_IN_ROW*(btn_margin+LVL_BTN_W)))/2+btn_margin/2
 };
 
+/**Lekezeli, hogy mi történik, ha egy játékmenüben található gombra kattint a felhasználó.
+ * Amennyiben nem érvényes gombra kattintott a főmenűbe irányít vissza. Érvényes szintre való kattintás
+ * esetén előkészíti a leendő játékfájlt, melyben eltárolja a szintet.
+ * @param int btnId
+ * @return Page nextPageToGo
+ * */
 Page clickedOnLevel(int btnId) {
-    //if not valid level just go to main menu by default
     if (btnId <= 0 || btnId > LEVEL_NUM) return mainMenu;
+
+    //IDEIGLENESEN, MERT A FELKESZ ALLAPOTBAN NINCSEN KÉSZ AZ ÖSSZZES PÁLYA, ÉS HOGY LEHESSEN TESZTELNI
+    //TEHÁT MIVEL AZ ELSŐ PÁLYA PÁR EL VAN KÉSZíTVE:
+    btnId = 1;
 
     initializeFileWithLevel(btnId);
 
     return inGame;
 }
 
-   //a felirat hossza = level szamjegyinek szama + pont + '\0'
-char * numberToLevelSign(int num) {
-        int signLength = (int) floor(log10(num))+3;
-        char * btn_title;
-        btn_title = (char *) malloc(signLength*sizeof(char));
-        sprintf(btn_title, "%d.", num);
-        return btn_title;
-}
-
 /**
- * Elkészíti a szintek gombjait, lefogalalja nekik a szükséges memóriaterületet.
+ * Előkészíti a szintek gombjait a játékmenüben, úgy hogy a képernyő közepén sorokba legyenek rendezbe.
+ *  lefogalalja nekik a szükséges memóriaterületet, a hívó felelőssége a memóriafelszabadítás.
  * @return ButtonRect ** buttons
  * */
 ButtonRect **createAllGameButton() {
@@ -53,36 +54,38 @@ ButtonRect **createAllGameButton() {
         gameBtns[k] = initBtn((SDL_Rect) {
                                     left_margin+(j%BTNS_IN_ROW)*(LVL_BTN_W+btn_margin),
                                     top_margin+(i*(LVL_BTN_H+btn_margin))
-                                    ,LVL_BTN_W, LVL_BTN_W}, numberToLevelSign(k+1), k+1);
+                                    ,LVL_BTN_W, LVL_BTN_W}, generateFormattedStringFromNumber(k+1,"%d."), k+1);
         gameBtns[k]->btnTitle.isTitleMalloced = true;
         k++;
         }
     }
-
     gameBtns[G_BTN_NUM-1] = initBtn((SDL_Rect) {S_WIDTH/2-75,S_HEIGHT-100,150,50}, "Vissza a főmenübe", BACK_TO_MAIN_BTN);
-
-
     return gameBtns;
 }
 
 
+/**
+ *  Előkészíti a játékpályán lévő gombokat.
+ *  lefogalalja nekik a szükséges memóriaterületet, a hívó felelőssége a memóriafelszabadítás.
+ * @return ButtonRect ** buttons
+ * */
 ButtonRect ** createInGameButtons() {
     ButtonRect **buttons;
     buttons = (ButtonRect **) malloc(IG_BTN_NUM * sizeof(ButtonRect));
 
-    buttons[0] = initBtn((SDL_Rect) { 750, 50, 100, 50}, "Tűz", IG_FIRE_BTN );
+    buttons[0] = initBtn((SDL_Rect) { 10, 50, 100, 50}, "Tűz", IG_FIRE_BTN );
     buttons[0]->col = (SDL_Color){0,120,120,255};
 
-    buttons[1] = initBtn((SDL_Rect) { 10, 450, 100, 50}, "Kihagy", IG_SKIP_BTN);
+    buttons[1] = initBtn((SDL_Rect) { 10, 400, 100, 50}, "Kihagy", IG_SKIP_BTN);
     buttons[1]->col = (SDL_Color){100,100,100,255};
 
-    buttons[2] = initBtn((SDL_Rect) { 10, 510, 100, 50}, "Reset", IG_RESET_BTN);
+    buttons[2] = initBtn((SDL_Rect) { 10, 460, 100, 50}, "Reset", IG_RESET_BTN);
     buttons[2]->col = (SDL_Color){100,100,100,255};
 
-    buttons[3] = initBtn((SDL_Rect) { 10, 570, 100, 50}, "Megállít", IG_PAUSE_BTN);
+    buttons[3] = initBtn((SDL_Rect) { 10, 520, 100, 50}, "Megállít", IG_PAUSE_BTN);
     buttons[3]->col = (SDL_Color){100,100,100,255};
 
-    buttons[4] = initBtn((SDL_Rect) { 10, 630, 100, 50}, "Kilép", BACK_TO_MAIN_BTN);
+    buttons[4] = initBtn((SDL_Rect) { 10, 580, 100, 50}, "Vissza", BACK_TO_GAME_MENU_BTN);
     buttons[4]->col = (SDL_Color){100,100,100,255};
 
     return buttons;

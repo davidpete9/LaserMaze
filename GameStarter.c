@@ -12,16 +12,23 @@
 #include "cJSON.h"
 #include "debugmalloc.h"
 
-char * generateFileNameStringByNumber(int num, const char * filename_format) {
-        int length = (int) floor(log10(num))+strlen(filename_format);
-        char * filename;
-        filename = (char *) malloc(length*sizeof(char));
-        sprintf(filename, filename_format, num);
-        return filename;
+
+/** Egy számot beilleszt egy adott formátumú stringbe.
+ * A hívó felelőssége a kapott stringet által foglalt memóriaterületet felszabadítani.
+ * @param int num
+ * @param const char *format
+ * @return char * formatted
+ * */
+char * generateFormattedStringFromNumber(int num, const char * format) {
+        int length = (int) floor(log10(num))+strlen(format)+1;
+        char * formatted;
+        formatted = (char *) malloc(length*sizeof(char));
+        sprintf(formatted, format, num);
+        return formatted;
 }
 
 SDL_Texture * getBlockTexture(SDL_Renderer *renderer, int blockId) {
-    char *filename = generateFileNameStringByNumber(blockId, BLOCKS_TEXTURE_FILENAME_FORMAT);
+    char *filename = generateFormattedStringFromNumber(blockId, BLOCKS_TEXTURE_FILENAME_FORMAT);
     SDL_Texture * blockImg = IMG_LoadTexture(renderer, filename);
     free(filename);
     return blockImg;
@@ -68,10 +75,10 @@ cJSON * selectRandomMaps(cJSON * allMap, int * selectedNum) {
 }
 
 cJSON * selectMapsForLevel(SDL_Renderer *renderer, int level) {
-     char * filename = generateFileNameStringByNumber(level, MAPS_FILENAME_FORMAT);
+     char * filename = generateFormattedStringFromNumber(level, MAPS_FILENAME_FORMAT);
      cJSON * allMap = getParsedJSONContentOfFile(filename);
      free(filename);
-     if (allMap == NULL) return;
+     if (allMap == NULL) return NULL;
      int mapsSelectedNum = 0;
      cJSON * selectedMaps = selectRandomMaps(allMap, &mapsSelectedNum);
      cJSON_Delete(allMap);
@@ -81,6 +88,7 @@ cJSON * selectMapsForLevel(SDL_Renderer *renderer, int level) {
 void drawGameTable(SDL_Renderer *renderer, int level) {
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
     SDL_RenderDrawRect(renderer, &TABLE_RECT);
+    SDL_RenderDrawRect(renderer, &RIGHT_SIDE_RECT);
     drawGrid(renderer);
 }
 
@@ -111,61 +119,39 @@ void initializeFileWithLevel(int level) {
     printStructureIntoFileAndClose(fp, structure);
 }
 
-void startGame(SDL_Renderer *renderer) {
-    cJSON * currentData = getParsedJSONContentOfFile(ACTUAL_STATUS_FILE_NAME);
-    if (currentData == NULL || 1) {
-        printf("A játék nem indítható...");
-        exit(1);
-    }
 
-    bool isGameInitialized = cJSON_GetObjectItem(currentData,"isGameInitialized")->valueint ? true : false;
+/** Elindítja a játékot, úgy hogy előszőr betölti a szintet az actual.json fájlból, majd kiválasztaja az aktuális
+ * pálylákat, és kirajzolja az elsőt. Amennyiben a játék sikeresen elindult, a pálya kirajzolódott true-val tér vissza, különben valamilyen
+ * hiba esetén false-sal.
+ * @param SDL_Renderer * renderer
+ * @return bool isSucceed
+ * */
+bool startGame(SDL_Renderer *renderer) {
+    cJSON * currentData = getParsedJSONContentOfFile(ACTUAL_STATUS_FILE_NAME);
+    if (currentData == NULL) return false;
+
+    bool isGameInitialized = cJSON_GetObjectItem(currentData,IS_GAME_INITIALIZED)->valueint ? true : false;
     int level = cJSON_GetObjectItem(currentData,LEVEL_STR)->valueint;
 
     if (!isGameInitialized) {
         cJSON * maps = selectMapsForLevel(renderer, level);
+        if (maps == NULL) return false;
         drawGameTable(renderer, level);
-
         /*IDEIGLENES MEGOLDÁS, CSAK A FÉLKÉSZ ÁLLAPOTHOZ, HOGY KIRAJZOLJON EGY PÁLYÁT*/
         cJSON *firstMap = cJSON_GetArrayItem(maps, 0);
         cJSON *firstMapBlockArr = cJSON_GetObjectItem(firstMap, MAP_BLOCKS_ARRAY);
         placeBlocksToGrid(renderer, firstMapBlockArr);
         cJSON_Delete(firstMap);
         cJSON_Delete(firstMapBlockArr);
-
-
-
         SDL_RenderPresent(renderer);
     }
     else {
        /*
-       Ebben az esetben fogja a randszer betolteni az előző mentést.
+       Ebben az esetben fogja a rendszer betolteni az előző mentést.
        */
     }
-
     cJSON_Delete(currentData);
+
+    return true;
 }
-
-
-/*
- if (isGameInitialized())
- int lvl = getLevel();
- //if (isLevelAccessable) {}
- maps = get5randomMap() {
-    getAllMapId() {
-        readGameFile - gameFileHandler
-        malloc (int n*sizeof(int))    }
-    }
-    selectRandom5Item()
-
-
- }
-
-  saveThemToActualFile(maps)
-
-
-  drawFirstMap(map) {
-    ....
-  }
-
-*/
 

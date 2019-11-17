@@ -8,7 +8,7 @@
 #include "MainMenuControl.h"
 #include "GameMenuControl.h"
 #include "Constanses.h"
-#include "GameStarter.c"
+#include "GameStarter.h"
 #include "SettingsMenuControl.h"
 #include "debugmalloc.h"
 
@@ -17,6 +17,11 @@ const SDL_Color DEFAULT_TEXT_COLOR = {255, 255, 255, 255};
 const SDL_Color DEFAULT_BUTTON_COLOR = {255, 0, 0, 255};
 const SDL_Color DEFAULT_BACKGROUND_COLOR = {0, 0, 0, 255};
 
+/** Megnézi, hogy az aktuális oldalon hány gomb van a gombok tömbjében.
+ * Kikeresi a Constanses.c fájlban deklarált konstansok közül
+ * @param Page currentPage
+ * @return int length
+ * */
 int getCurrentButtonArraySize(Page currentPage) {
     switch (currentPage) {
         case mainMenu:
@@ -142,6 +147,12 @@ bool isClickedOnBtn(SDL_Rect *btnCord, int x, int y) {
     return btnCord->x <= x && btnCord->x + btnCord->w >= x && btnCord->y <= y && btnCord->y + btnCord->h >= y;
 }
 
+/**
+ * Lerajzolja az összes gombot, amit az adott oldalon tartalmaz a menü
+ * @param SDL_Renderer *renderer,
+ * @param ButtonRect ** buttons,
+ * @param Page currentPage
+ * */
 void drawAllCurrentButtons(SDL_Renderer *renderer, ButtonRect **buttons, Page currentPage) {
     for (int i = 0; i < getCurrentButtonArraySize(currentPage); i++) {
         drawButton(renderer, buttons[i]);
@@ -167,7 +178,9 @@ int getClickedButtonIdIfExists(ButtonRect **buttons, Page currentPage, int x, in
 
 /**
  * Lekezeli azt, ha a játékos valamelyik gombra kattintott. Ha az adott oldalról egy másikba kéne váltani, akkor visszatér a következő Page
- * értékével, vagy -1 - gyel, ha maradunk az adott oldlon.
+ * értékével, vagy -1-gyel, ha maradunk az adott ha maradunk az adott oldlon.
+ * (Ameddig nincsen az összes funkció implementálva, addig minden esetben, ha olyan gombra kattint a felhasználó, aminek a
+   működése nincsen elkészítve, akkor a főmenübe tér vissza alapértelmezetten.)
  * @param currentButtonId
  * @return Page next
  * */
@@ -180,13 +193,19 @@ Page handleBtnClickAndGetNextPageIfShould(int currentButtonId, Page currentPage)
         case gameMenu:
             return clickedOnLevel(currentButtonId);
         case inGame:
+            if (currentButtonId == BACK_TO_GAME_MENU_BTN) return gameMenu;
         case settings:
         default:
             return mainMenu;
     }
 }
 
-
+/** Lekezeli azt, hogy a kurzor amennyiben gomb fölött helyezkedik el válozzon át mutatóvá, egyébként legyen nyíl.
+ * @param ButtonRect **buttons
+ * @param int x
+ * @param int y
+ * @param Page currentPage
+ * */
 void handleCursor(ButtonRect **buttons, int x, int y, Page currentPage) {
     SDL_Cursor *cursor;
     if (getClickedButtonIdIfExists(buttons, currentPage, x, y) != -1) {
@@ -197,6 +216,12 @@ void handleCursor(ButtonRect **buttons, int x, int y, Page currentPage) {
     SDL_SetCursor(cursor);
 }
 
+/** Visszaállítja a képernyőt alapállapotba. A függvény akkor fut le, ha oldalváltás történi a menüben.
+ *  Felszabadítja az összes, gombok számára lefoglalt memóriaterületet.
+ *  @param SDL_Renderer * renderer,
+ *  @param ButtonRect ** buttons,
+ *  @param Page currentPage
+ * */
 void resetScreenAndFreeButtonsArray(SDL_Renderer *renderer, ButtonRect **buttons, Page currentPage) {
     for (int i = 0; i < getCurrentButtonArraySize(currentPage); i++) {
 
@@ -213,6 +238,12 @@ void resetScreenAndFreeButtonsArray(SDL_Renderer *renderer, ButtonRect **buttons
     SDL_RenderPresent(renderer);
 }
 
+/** A menü futtatást végzi, lekezeli azt, mikor a felhasználó valahol kattint, amennyiben oldalt kell váltania
+ *  meghívja az initializeMenu függvényt, ami előkészíti a következő oldalt.
+ *  @param SDL_Renderer * renderer
+ *  @param ButtonRect **buttons
+ *  @param Page currentPage
+ * */
 void runMenu(SDL_Renderer *renderer, ButtonRect **buttons, Page currentPage) {
     SDL_Event event;
     bool shouldLeavePage = false;
@@ -239,7 +270,6 @@ void runMenu(SDL_Renderer *renderer, ButtonRect **buttons, Page currentPage) {
             shouldLeavePage = true;
             break;
         }
-
     }
 
     if (shouldLeavePage) {
@@ -248,7 +278,14 @@ void runMenu(SDL_Renderer *renderer, ButtonRect **buttons, Page currentPage) {
     }
 }
 
-int initializeMenu(SDL_Renderer *renderer, Page currentPage) {
+/** Elkészíti a menüt egy adott oldalon. Leírja, hogy melyik oldal esetén milyen gombokat tartalmazzon a menü.
+ *  A runMenu függvény segítségével végzi az Event ellenőrzését.
+ *  Mikor oldalváltás történik a függvény a runMenu által újra meghívódik rekrúzívan.
+ *  Akkor fejezi be a futását, mikor a játékból kilépett a felhasználó.
+ *  @param SDL_Renderer *renderer
+ *  @param Page currentPage
+ * */
+void initializeMenu(SDL_Renderer *renderer, Page currentPage) {
 
     ButtonRect **buttons;
 
@@ -264,10 +301,13 @@ int initializeMenu(SDL_Renderer *renderer, Page currentPage) {
             break;
         case inGame:
             buttons = createInGameButtons();
-            startGame(renderer);
+            if (!startGame(renderer)) {
+                printf("\n-------A játékindítás nem sikerült, kilépés!.--------\n");
+                return;
+            }
             break;
         case exitgame:
-            return 0;
+            return;
         default:
             buttons = createMainMenuButtons();
             break;
@@ -275,5 +315,5 @@ int initializeMenu(SDL_Renderer *renderer, Page currentPage) {
 
     drawAllCurrentButtons(renderer, buttons, currentPage);
     runMenu(renderer, buttons, currentPage);
-    return 0;
+    return;
 }

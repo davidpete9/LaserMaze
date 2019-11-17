@@ -1,7 +1,7 @@
 #ifndef CONSTANSES_H_INCLUDED
 #define CONSTANSES_H_INCLUDED
 
-#define S_WIDTH 880
+#define S_WIDTH 900
 #define S_HEIGHT 720
 
 extern const char *IS_GAME_INITIALIZED;
@@ -12,11 +12,13 @@ extern const char *MAP_BLOCKS_ID;
 extern const char *MAP_BLOCKS_ROW;
 extern const char *MAP_BLOCKS_COL;
 extern const char *MAP_BLOCKS_ROTATION;
+extern const char *PLACEABLE_BLOCK_ARRAY;
 
 extern const char * ACTUAL_STATUS_FILE_NAME;
 extern const char * MAPS_FILENAME_FORMAT;
 extern const char * BLOCKS_TEXTURE_FILENAME_FORMAT;
 extern const SDL_Rect TABLE_RECT;
+extern const SDL_Rect RIGHT_SIDE_RECT;
 
 enum {
     BRICK = 1,
@@ -25,7 +27,6 @@ enum {
     DOUBLE_REFLECTION_WINDOW = 4,
     GOAL_BLOCK = 999,
     LASER_CANNON = 111
-
 };
 
 enum {
@@ -59,7 +60,8 @@ enum {
     //Game menu  buttons
     //all number between: 1 - num of levels
 
-    //Back to main menu
+
+    BACK_TO_GAME_MENU_BTN = 888,
     BACK_TO_MAIN_BTN = 999,
 
     //In game buttons
