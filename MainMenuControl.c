@@ -19,7 +19,7 @@
 Page getNextPageOnMainMenuClickOrQuit(int buttonId) {
     switch (buttonId) {
         case M_EXIT_BTN:
-             exit(0);
+             return exitgame;
         case M_GAME_BTN:
             return gameMenu;
         case M_SETTINGS_BTN:

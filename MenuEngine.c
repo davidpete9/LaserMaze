@@ -8,6 +8,7 @@
 #include "MainMenuControl.h"
 #include "GameMenuControl.h"
 #include "Constanses.h"
+#include "GameStarter.c"
 #include "SettingsMenuControl.h"
 #include "debugmalloc.h"
 
@@ -65,7 +66,7 @@ void writeTextToDisplay(SDL_Renderer *renderer, const StringToDisplay *strObj) {
  * */
 void drawButton(SDL_Renderer *renderer, ButtonRect *btn) {
 
-    SDL_SetRenderDrawColor(renderer, 0xFF, 0x00, 0x00, 0xFF);
+    SDL_SetRenderDrawColor(renderer, btn->col.r, btn->col.g, btn->col.b, btn->col.a);
     SDL_RenderFillRect(renderer, &btn->rec);
 
     writeTextToDisplay(renderer, &btn->btnTitle);
@@ -88,6 +89,7 @@ ButtonRect *initBtn(SDL_Rect pos, char *title, int id) {
     btn->btnTitle.title = title;
     btn->btnTitle.fontSize = calculateSuitableFontSizeInBtn(pos);
     btn->btnTitle.titleColor = DEFAULT_TEXT_COLOR;
+    btn->btnTitle.isTitleMalloced = false;
 
     setBtnTitlePos(&btn->btnTitle.pos, pos);
 
@@ -197,7 +199,10 @@ void handleCursor(ButtonRect **buttons, int x, int y, Page currentPage) {
 
 void resetScreenAndFreeButtonsArray(SDL_Renderer *renderer, ButtonRect **buttons, Page currentPage) {
     for (int i = 0; i < getCurrentButtonArraySize(currentPage); i++) {
-        //todo free title!!
+
+        if (buttons[i]->btnTitle.isTitleMalloced) {
+            free(buttons[i]->btnTitle.title);
+        }
         free(buttons[i]);
     }
     free(buttons);
@@ -234,6 +239,7 @@ void runMenu(SDL_Renderer *renderer, ButtonRect **buttons, Page currentPage) {
             shouldLeavePage = true;
             break;
         }
+
     }
 
     if (shouldLeavePage) {
@@ -242,7 +248,7 @@ void runMenu(SDL_Renderer *renderer, ButtonRect **buttons, Page currentPage) {
     }
 }
 
-void initializeMenu(SDL_Renderer *renderer, Page currentPage) {
+int initializeMenu(SDL_Renderer *renderer, Page currentPage) {
 
     ButtonRect **buttons;
 
@@ -258,8 +264,10 @@ void initializeMenu(SDL_Renderer *renderer, Page currentPage) {
             break;
         case inGame:
             buttons = createInGameButtons();
-            startGame();
+            startGame(renderer);
             break;
+        case exitgame:
+            return 0;
         default:
             buttons = createMainMenuButtons();
             break;
@@ -267,4 +275,5 @@ void initializeMenu(SDL_Renderer *renderer, Page currentPage) {
 
     drawAllCurrentButtons(renderer, buttons, currentPage);
     runMenu(renderer, buttons, currentPage);
+    return 0;
 }

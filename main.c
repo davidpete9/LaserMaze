@@ -29,8 +29,11 @@ int main(int argc, char *argv[]) {
     SDL_RenderClear(renderer);
 
 
-    initializeMenu(renderer, mainMenu);
+    int status = initializeMenu(renderer, mainMenu);
 
+    if (status == 0) {
+        return 0;
+    }
 
     return 0;
 }
