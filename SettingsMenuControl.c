@@ -10,6 +10,9 @@
 #include "Constanses.h"
 #include "debugmalloc.h"
 
+/** Elkészíti a beállítások menü gombjait, lefogalalja nekik a szükséges memóriaterületet.
+* @return ButtonRect ** buttons
+ * */
 ButtonRect **createSettingsMenuButtons() {
 
     ButtonRect **buttons;
