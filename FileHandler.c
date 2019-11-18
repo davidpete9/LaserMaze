@@ -28,7 +28,10 @@ FILE *createNewFile(const char *filename) {
     return fp;
 }
 
-//todo error handlig
+/**
+ * @param cJSON * structure
+ * @param FILE * fp
+ * */
 void printStructureIntoFileAndClose(FILE *fp, cJSON * structure) {
     fprintf(fp, cJSON_Print(structure));
     fclose(fp);
