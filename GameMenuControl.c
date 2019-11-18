@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include "MenuEngine.h"
 #include "Constanses.h"
-#include "GameStarter.c"
+#include "GameStarter.h"
 #include "debugmalloc.h"
 
 enum {
