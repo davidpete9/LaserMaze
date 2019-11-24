@@ -20,6 +20,10 @@ extern const char * BLOCKS_TEXTURE_FILENAME_FORMAT;
 extern const SDL_Rect TABLE_RECT;
 extern const SDL_Rect RIGHT_SIDE_RECT;
 
+extern const int GRID_W;
+
+int getOneSquareW();
+
 enum {
     BRICK = 1,
     ONE_SIDED_WINDOW = 2,
@@ -32,8 +36,6 @@ enum {
 enum {
 
     BLOCK_TEXTURE_W = 110,
-
-    GRID_W = 5,
     MAPS_IN_A_LEVEL = 5,
 
     SMALLEST_FONT_SIZE = 10,

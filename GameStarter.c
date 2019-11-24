@@ -12,6 +12,13 @@
 #include "cJSON.h"
 #include "debugmalloc.h"
 
+typedef struct Cell {
+    int block_id;
+    bool isPlacedByUser;
+    bool isRotatable;
+    bool isMoveable;
+    int rotation;
+} Cell;
 
 /** Egy számot beilleszt egy adott formátumú stringbe.
  * A hívó felelőssége a kapott stringet által foglalt memóriaterületet felszabadítani.
@@ -27,6 +34,8 @@ char * generateFormattedStringFromNumber(int num, const char * format) {
         return formatted;
 }
 
+
+
 /** Visszatér az adott blokk textúrájával, amit fájlból töltött be.
  * A hívó felelőssége ezt késöbb SDL_DestroyTexture()-rel törölni.
  * @param SDL_Renderer *renderer,
@@ -39,6 +48,111 @@ SDL_Texture * getBlockTexture(SDL_Renderer *renderer, int blockId) {
     free(filename);
     return blockImg;
 }
+
+
+Cell ** initGridStructure(cJSON * blockArr) {
+
+    Cell ** grid;
+    grid = (Cell**) malloc(GRID_W*sizeof(Cell));
+    grid[0] = (Cell*) malloc(GRID_W*GRID_W*sizeof(Cell));
+    for (int i = 1;i < GRID_W;i++) {
+        grid[i] = grid[0]+i*GRID_W;
+    }
+
+    for (int i = 0; i < cJSON_GetArraySize(blockArr); i++) {
+        cJSON * block = cJSON_GetArrayItem(blockArr, i);
+
+        int col = cJSON_GetObjectItem(block, MAP_BLOCKS_COL)->valueint;
+        int row = cJSON_GetObjectItem(block, MAP_BLOCKS_ROW)->valueint;
+
+        grid[row-1][col-1].isMoveable = false;
+        grid[row-1][col-1].isPlacedByUser = false;
+        grid[row-1][col-1].rotation = cJSON_GetObjectItem(block, MAP_BLOCKS_ROTATION);
+        grid[row-1][col-1].isRotatable = false;
+    }
+
+    return grid;
+
+}
+
+void drawBlock2(SDL_Renderer * renderer, SDL_Rect to, int blockId) {
+    SDL_Texture * imgTexture = getBlockTexture(renderer, blockId);
+    if (!imgTexture) {
+        SDL_SetRenderDrawColor(renderer, 0,255,0,120);
+        SDL_RenderFillRect(renderer, &to);
+    }
+    else {
+        SDL_RenderCopy(renderer, imgTexture, NULL, &to);
+        SDL_DestroyTexture(imgTexture);
+    }
+}
+
+//todo temp
+bool isClickedOnRect(SDL_Rect * actualPlace, int x, int y) {
+    return  actualPlace->x <= x && actualPlace->x + actualPlace->w >= x && actualPlace->y <= y && actualPlace->y + actualPlace->h >= y;
+}
+
+int getClickedOnBlockId(cJSON * moveable_blocks, int x, int y) {
+    for (int i = 0;i < cJSON_GetArraySize(moveable_blocks); i++) {
+        cJSON * block = cJSON_GetArrayItem(moveable_blocks, i);
+
+        int col = cJSON_GetObjectItem(block, MAP_BLOCKS_COL)->valueint;
+        int row = cJSON_GetObjectItem(block, MAP_BLOCKS_ROW)->valueint;
+
+
+        SDL_Rect actualPlace;
+        int square_w = getOneSquareW();
+        actualPlace.x = RIGHT_SIDE_RECT.x+(square_w*(col-1));
+        actualPlace.w = square_w;
+        actualPlace.y = RIGHT_SIDE_RECT.y+((row-1)*square_w);
+        int id = cJSON_GetObjectItem(block, MAP_BLOCKS_ID)->valueint;
+        if (isClickedOnBtn(&actualPlace,x,y)) {
+            return id;
+        }
+    }
+    return -1;
+}
+
+//todo mások file
+void handleGameEvents(SDL_Renderer *renderer, cJSON * blocks, cJSON * moveable_blocks, Cell *** grid) {
+    SDL_Event event;
+    bool isDragBlock = false;
+    int clickedOnId = -1;
+    int squaer_w = getOneSquareW();
+   while (SDL_WaitEvent(&event) && event.type != SDL_QUIT) {
+        switch (event.type) {
+            /* eger kattintas */
+            case SDL_MOUSEBUTTONDOWN:
+                if (event.button.button == SDL_BUTTON_LEFT) {
+                    clickedOnId = getClickedOnBlockId(moveable_blocks,event.button.x,event.button.y);
+                    printf("\n////////// %d //////\n", clickedOnId);
+                    if (clickedOnId != -1) {
+                        isDragBlock = true;
+                    }
+                }
+                break;
+            case SDL_MOUSEBUTTONUP:
+                isDragBlock = false;
+                if (event.button.button == SDL_BUTTON_LEFT) {
+
+                }
+                break;
+            case SDL_MOUSEMOTION:
+                if (isDragBlock) {
+                    drawBlock2(renderer, (SDL_Rect) { event.motion.x, event.motion.y, squaer_w, squaer_w}, clickedOnId);
+                    SDL_RenderPresent(renderer);
+                }
+                }
+
+
+        }
+    }
+
+
+
+
+
+
 
 /**
  * Lerajzolja a játéktáblára a kapott blokkot, vagy a nagy táblára, vagy a jobb oldali mezőre.
@@ -195,11 +309,14 @@ bool startGame(SDL_Renderer *renderer) {
         placeBlocksToGrid(renderer, firstMapBlockArr, TABLE_RECT, GRID_W);
         cJSON *rightSideBlockArr  = cJSON_GetObjectItem(firstMap, PLACEABLE_BLOCK_ARRAY);
         placeBlocksToGrid(renderer, rightSideBlockArr, RIGHT_SIDE_RECT, 1);
+        SDL_RenderPresent(renderer);
+        Cell ** grid = initGridStructure(firstMapBlockArr);
+        handleGameEvents(renderer, firstMapBlockArr, rightSideBlockArr, &grid);
 
         cJSON_Delete(rightSideBlockArr);
         cJSON_Delete(firstMap);
         cJSON_Delete(firstMapBlockArr);
-        SDL_RenderPresent(renderer);
+
     }
     else {
        /*

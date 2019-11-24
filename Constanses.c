@@ -18,3 +18,9 @@ const char * BLOCKS_TEXTURE_FILENAME_FORMAT = "blocks/%d.png";
 
 const SDL_Rect TABLE_RECT = (SDL_Rect) {120,50,600,600};
 const SDL_Rect RIGHT_SIDE_RECT = (SDL_Rect) {750,50,120,600};
+
+const int  GRID_W = 5;
+int getOneSquareW() {return  (int) TABLE_RECT.w/GRID_W; }
+
+
+
