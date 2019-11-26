@@ -20,8 +20,6 @@ extern const char * BLOCKS_TEXTURE_FILENAME_FORMAT;
 extern const SDL_Rect TABLE_RECT;
 extern const SDL_Rect RIGHT_SIDE_RECT;
 
-extern const int GRID_W;
-
 int getOneSquareW();
 
 enum {
@@ -34,6 +32,9 @@ enum {
 };
 
 enum {
+
+    GRID_W = 5,
+    SQUARE_W = 120, //TABLERECT.w / GRID_W
 
     BLOCK_TEXTURE_W = 110,
     MAPS_IN_A_LEVEL = 5,

@@ -9,18 +9,9 @@
 #include "MenuEngine.h"
 #include "Constanses.h"
 #include "FileHandler.h"
+#include "GameboardEvents.h"
 #include "cJSON.h"
 #include "debugmalloc.h"
-
-typedef struct Cell {
-    int block_id;
-    bool isPlacedByUser;
-    bool isRotatable;
-    bool isMoveable;
-    int rotation;
-    bool isLeftSide;
-    bool display;
-} Cell;
 
 /** Egy számot beilleszt egy adott formátumú stringbe.
  * A hívó felelőssége a kapott stringet által foglalt memóriaterületet felszabadítani.
@@ -34,20 +25,6 @@ char *generateFormattedStringFromNumber(int num, const char *format) {
     formatted = (char *) malloc(length * sizeof(char));
     sprintf(formatted, format, num);
     return formatted;
-}
-
-
-/** Visszatér az adott blokk textúrájával, amit fájlból töltött be.
- * A hívó felelőssége ezt késöbb SDL_DestroyTexture()-rel törölni.
- * @param SDL_Renderer *renderer,
- * @param int blockId
- * @return SDL_Texture * blockImg
- * */
-SDL_Texture *getBlockTexture(SDL_Renderer *renderer, int blockId) {
-    char *filename = generateFormattedStringFromNumber(blockId, BLOCKS_TEXTURE_FILENAME_FORMAT);
-    SDL_Texture *blockImg = IMG_LoadTexture(renderer, filename);
-    free(filename);
-    return blockImg;
 }
 
 void initCell(bool isLeft, int block_id, int rotation, Cell *cell) {
@@ -117,129 +94,6 @@ void printGridForDebug(Cell **grid) {
     }
 }
 
-void drawMoveing(SDL_Renderer *renderer, int x, int y, int blockId) {
-    int squaer_w = getOneSquareW();
-    SDL_Rect to = (SDL_Rect) {x-((int)(squaer_w/2)), y-((int)(squaer_w/2)), squaer_w, squaer_w};
-    SDL_Texture *imgTexture = getBlockTexture(renderer, blockId);
-    SDL_RenderCopy(renderer, imgTexture, NULL, &to);
-    SDL_DestroyTexture(imgTexture);
-}
-
-void drawCurrentGrid(SDL_Renderer *renderer, Cell **grid, ButtonRect **buttons) {
-    for (int i = 0; i < GRID_W; i++) {
-        for (int j = 0; j <= GRID_W; j++) {
-            if (grid[i][j].block_id != -1 && grid[i][j].display) {
-                drawBlock(renderer, grid[i][j], i, j);
-            }
-        }
-    }
-}
-
-//todo temp
-bool isClickedOnRect(SDL_Rect *actualPlace, int x, int y) {
-    return actualPlace->x <= x && actualPlace->x + actualPlace->w >= x && actualPlace->y <= y &&
-           actualPlace->y + actualPlace->h >= y;
-}
-
-SDL_Rect getActualCoordsOnGrid(bool isLeftSide, int x, int y) {
-    int square_w = getOneSquareW();
-    SDL_Rect base = isLeftSide ? TABLE_RECT : RIGHT_SIDE_RECT;
-    //todo document it
-    x = isLeftSide ? x : 0;
-
-    return (SDL_Rect) {base.x + (x * square_w), base.y + (square_w * y), square_w, square_w};
-}
-
-//todo fix... square w
-Cell * getClickedOnBlock(Cell **grid, int x, int y) {
-
-    for (int i = 0; i < GRID_W; i++) {
-        for (int j = 0; j <= GRID_W; j++) {
-            if (grid[i][j].block_id != -1 && grid[i][j].isMoveable) {
-                SDL_Rect block_place = getActualCoordsOnGrid(grid[i][j].isLeftSide, j, i);
-                if (isClickedOnBtn(&block_place, x, y)) {
-                    return &grid[i][j];
-                }
-            }
-        }
-    }
-    return NULL;
-}
-
-bool PlaceBlockIfCan(Cell **grid, Cell * block, int x, int y, SDL_Renderer * renderer) {
-    int square_w = getOneSquareW();
-    for (int i = 0; i < GRID_W; i++) {
-        for (int j = 0;j < GRID_W; j++) {
-            SDL_Rect current = getActualCoordsOnGrid(true, j,i);
-
-             if (isClickedOnBtn(&current, x,y) && grid[i][j].block_id == -1) {
-                initCell(true, block->block_id, block->rotation, &grid[i][j]);
-                return true;
-             }
-        }
-    }
-    return false;
-}
-
-//todo mások file
-Page runGameEvents(SDL_Renderer *renderer, cJSON *blocks, Cell ***grid, ButtonRect **buttons) {
-    SDL_Event event;
-    bool isDragBlock = false;
-    Cell * clickedOn;
-
-    int squaer_w = getOneSquareW();
-    while (SDL_WaitEvent(&event) && event.type != SDL_QUIT) {
-
-        switch (event.type) {
-            /* eger kattintas */
-            case SDL_MOUSEBUTTONDOWN:
-                if (event.button.button == SDL_BUTTON_LEFT) {
-
-                    int clickedOnBtnId = getClickedButtonIdIfExists(buttons, inGame, event.button.x, event.button.y);
-                    if (clickedOnBtnId != -1) {
-                        Page nextPage = handleBtnClickAndGetNextPageIfShould(clickedOnBtnId, inGame);
-                        if (nextPage != -1) return nextPage;
-                    }
-
-                    if (!isDragBlock) {
-                        clickedOn = getClickedOnBlock(*grid, event.button.x, event.button.y);
-                        clickedOn->display = false;
-                        if (clickedOn != NULL) isDragBlock = true;
-                    }
-                }
-                break;
-            case SDL_MOUSEBUTTONUP:
-
-                if (event.button.button == SDL_BUTTON_LEFT) {
-                    if (isDragBlock) {
-                        if (!PlaceBlockIfCan(*grid, clickedOn, event.button.x, event.button.y, renderer)) {
-                            clickedOn->block_id = -1;
-                        }
-                        drawFullMap(renderer, *grid, buttons);
-                        SDL_RenderPresent(renderer);
-                        isDragBlock = false;
-                        }
-                    }
-                break;
-            case SDL_MOUSEMOTION:
-                if (isDragBlock && clickedOn != NULL) {
-                    drawFullMap(renderer, *grid, buttons);
-                    drawMoveing(renderer, event.motion.x, event.motion.y, clickedOn->block_id);
-                    SDL_RenderPresent(renderer);
-                }
-        }
-
-    }
-    return -1;
-}
-//todo fix square_W
-void drawBlock(SDL_Renderer *renderer, Cell cell, int y, int x) {
-    SDL_Rect block_place = getActualCoordsOnGrid(cell.isLeftSide,x,y);
-    SDL_Texture *imgTexture = getBlockTexture(renderer, cell.block_id);
-    SDL_RenderCopyEx(renderer, imgTexture, NULL, &block_place, cell.rotation * 90, NULL, SDL_FLIP_NONE);
-    SDL_DestroyTexture(imgTexture);
-}
-
 /** Kiválasztja a megfelelő számú (5) darab pályát a szintfájlban tároltak közül.
  *  Még nincsen kész teljesen.
  * @param cJSON * allMap
@@ -271,34 +125,6 @@ cJSON *selectMapsForLevel(int level) {
     return selectedMaps;
 }
 
-/** Kirajzolja a játéktábla alapjait (négyzetrácsok, jobb oldali sáv)
- * @param SDL_Renderer *renderer
- * @pararm int level
- * */
-void drawGameTable(SDL_Renderer *renderer) {
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-    SDL_RenderDrawRect(renderer, &TABLE_RECT);
-    SDL_RenderDrawRect(renderer, &RIGHT_SIDE_RECT);
-    drawGrid(renderer);
-}
-
-/** Kirajzolja a négyzetrácsokat.
- * @pararm SDL_Renderer * renderer
- * */
-void drawGrid(SDL_Renderer *renderer) {
-    int squere_w = getOneSquareW();
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-    for (int i = 1; i < GRID_W; i++) {
-        SDL_RenderDrawLine(renderer, TABLE_RECT.x + (i * squere_w), TABLE_RECT.y, TABLE_RECT.x + (i * squere_w),
-                           TABLE_RECT.y + TABLE_RECT.h);
-        SDL_RenderDrawLine(renderer, TABLE_RECT.x, TABLE_RECT.y + (i * squere_w), TABLE_RECT.x + TABLE_RECT.w,
-                           TABLE_RECT.y + (i * squere_w));
-
-        SDL_RenderDrawLine(renderer, RIGHT_SIDE_RECT.x, RIGHT_SIDE_RECT.y + (i * squere_w),
-                           RIGHT_SIDE_RECT.x + RIGHT_SIDE_RECT.w, RIGHT_SIDE_RECT.y + (i * squere_w));
-    }
-}
-
 //tofo wtf...
 /**
  * @param cJSON *structure
@@ -328,14 +154,6 @@ void initializeFileWithLevel(int level) {
     setLevel(structure, level);
 
     printStructureIntoFileAndClose(fp, structure);
-}
-
-void drawFullMap(SDL_Renderer *renderer, Cell **grid, ButtonRect **buttons) {
-    SDL_SetRenderDrawColor(renderer,0,0,0,255);
-    SDL_RenderClear(renderer);
-    drawAllCurrentButtons(renderer, buttons, inGame);
-    drawGameTable(renderer);
-    drawCurrentGrid(renderer, grid, buttons);
 }
 
 /** Elindítja a játékot, úgy hogy előszőr betölti a szintet az actual.json fájlból, majd kiválasztaja az aktuális
