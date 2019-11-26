@@ -157,7 +157,6 @@ void drawAllCurrentButtons(SDL_Renderer *renderer, ButtonRect **buttons, Page cu
     for (int i = 0; i < getCurrentButtonArraySize(currentPage); i++) {
         drawButton(renderer, buttons[i]);
     }
-    SDL_RenderPresent(renderer);
 }
 
 /**
@@ -238,54 +237,7 @@ void resetScreenAndFreeButtonsArray(SDL_Renderer *renderer, ButtonRect **buttons
     SDL_RenderPresent(renderer);
 }
 
-/** A menü futtatást végzi, lekezeli azt, mikor a felhasználó valahol kattint, amennyiben oldalt kell váltania
- *  meghívja az initializeMenu függvényt, ami előkészíti a következő oldalt.
- *  @param SDL_Renderer * renderer
- *  @param ButtonRect **buttons
- *  @param Page currentPage
- * */
-void runMenu(SDL_Renderer *renderer, ButtonRect **buttons, Page currentPage) {
-    SDL_Event event;
-    bool shouldLeavePage = false;
-    Page nextPage = -1;
-
-    while (SDL_WaitEvent(&event) && event.type != SDL_QUIT && !shouldLeavePage) {
-        /* SDL_RenderPresent(renderer); - MacOS Mojave esetén */
-        switch (event.type) {
-            case SDL_MOUSEBUTTONUP:
-                if (event.button.button == SDL_BUTTON_LEFT) {
-                    int clickedOnBtnId = getClickedButtonIdIfExists(buttons, currentPage, event.button.x,
-                                                                    event.button.y);
-                    if (clickedOnBtnId != -1) {
-                        nextPage = handleBtnClickAndGetNextPageIfShould(clickedOnBtnId, currentPage);
-                    }
-                }
-                break;
-            case SDL_MOUSEMOTION:
-                handleCursor(buttons, event.motion.x, event.motion.y, currentPage);
-                break;
-        }
-
-        if (nextPage != -1) {
-            shouldLeavePage = true;
-            break;
-        }
-    }
-
-    if (shouldLeavePage) {
-        resetScreenAndFreeButtonsArray(renderer, buttons, currentPage);
-        initializeMenu(renderer, nextPage);
-    }
-}
-
-/** Elkészíti a menüt egy adott oldalon. Leírja, hogy melyik oldal esetén milyen gombokat tartalmazzon a menü.
- *  A runMenu függvény segítségével végzi az Event ellenőrzését.
- *  Mikor oldalváltás történik a függvény a runMenu által újra meghívódik rekrúzívan.
- *  Akkor fejezi be a futását, mikor a játékból kilépett a felhasználó.
- *  @param SDL_Renderer *renderer
- *  @param Page currentPage
- * */
-void initializeMenu(SDL_Renderer *renderer, Page currentPage) {
+ButtonRect ** createButtonsForCurrentPage(Page currentPage) {
 
     ButtonRect **buttons;
 
@@ -301,10 +253,6 @@ void initializeMenu(SDL_Renderer *renderer, Page currentPage) {
             break;
         case inGame:
             buttons = createInGameButtons();
-            if (!startGame(renderer)) {
-                printf("\n-------A játékindítás nem sikerült, kilépés!.--------\n");
-                return;
-            }
             break;
         case exitgame:
             return;
@@ -313,7 +261,49 @@ void initializeMenu(SDL_Renderer *renderer, Page currentPage) {
             break;
     }
 
-    drawAllCurrentButtons(renderer, buttons, currentPage);
-    runMenu(renderer, buttons, currentPage);
-    return;
+    return buttons;
 }
+
+
+
+Page runMenuPage(SDL_Renderer *renderer, Page current) {
+    ButtonRect ** buttons = createButtonsForCurrentPage(current);
+    drawAllCurrentButtons(renderer, buttons, current);
+    SDL_RenderPresent(renderer);
+
+    SDL_Event event;
+    bool shouldLeavePage = false;
+    Page nextPage = -1;
+
+    while (SDL_WaitEvent(&event) && event.type != SDL_QUIT && !shouldLeavePage) {
+        /* SDL_RenderPresent(renderer); - MacOS Mojave esetén */
+        switch (event.type) {
+            case SDL_MOUSEBUTTONUP:
+                if (event.button.button == SDL_BUTTON_LEFT) {
+                    int clickedOnBtnId = getClickedButtonIdIfExists(buttons, current, event.button.x,
+                                                                    event.button.y);
+                    if (clickedOnBtnId != -1) {
+                        nextPage = handleBtnClickAndGetNextPageIfShould(clickedOnBtnId, current);
+                    }
+                }
+                break;
+            case SDL_MOUSEMOTION:
+                handleCursor(buttons, event.motion.x, event.motion.y, current);
+                break;
+        }
+
+        if (nextPage != -1) {
+            shouldLeavePage = true;
+            break;
+        }
+    }
+
+    if (shouldLeavePage) {
+        resetScreenAndFreeButtonsArray(renderer, buttons, current);
+        return nextPage;
+    }
+    return -1;
+}
+
+
+

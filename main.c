@@ -28,7 +28,15 @@ int main(int argc, char *argv[]) {
     }
     SDL_RenderClear(renderer);
 
-    initializeMenu(renderer, mainMenu);
+    Page next = runMenuPage(renderer, mainMenu);
+    while (next != -1 && next != exitgame) {
+        if (next == inGame) {
+            next = startGame(renderer);
+        }
+        else {
+            next = runMenuPage(renderer, next);
+        }
+    }
 
     return 0;
 }

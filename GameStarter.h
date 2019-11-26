@@ -72,8 +72,8 @@ void setLevel(cJSON *structure, int level);
 * pálylákat, és kirajzolja az elsőt. Amennyiben a játék sikeresen elindult, a pálya kirajzolódott true-val tér vissza, különben valamilyen
 * hiba esetén false-sal.
 * @param SDL_Renderer * renderer
-* @return bool isSucceed
+* @return Page isSucceed
 * */
-bool startGame(SDL_Renderer *renderer);
+Page startGame(SDL_Renderer *renderer);
 
 #endif // GAMESTARTER_H_INCLUDED
