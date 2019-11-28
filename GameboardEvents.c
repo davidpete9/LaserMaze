@@ -167,7 +167,6 @@ LaserPath * createRoot(Cell **grid) {
 }
 
 int getTheNextTouchedBlockRowOrCol(LaserPath * line, Cell **grid) {
-    printTree(line);
     int row = line->startRow;
     int col = line->startCol;
     switch (line->dir) {
@@ -187,6 +186,17 @@ int getTheNextTouchedBlockRowOrCol(LaserPath * line, Cell **grid) {
         return 0;
     }
 }
+
+Direction getOppositeDir(Direction dir) {
+    if (dir == north || dir == south) {
+        return dir == north ? south : north;
+    }
+    else if (dir == east || dir == west) {
+        return dir == west ? east : west;
+    }
+    return nowhere;
+}
+
 /**
 Építési folyamat:
 Megvan: az aktuális root koordinátái
@@ -197,12 +207,15 @@ Cél: toKoordináták beállítása + next nek a from, és a dir
 void *createLaserPathTree(Cell ** grid, LaserPath ** root) {
 
     LaserPath * r = *root;
-    if (r->dir == nowhere) return root;
+    if (r->dir == nowhere) return;
 
     //temp
     int coord = getTheNextTouchedBlockRowOrCol(r, grid);
+    bool hitEnd = false;
+    if (coord == -1 || coord == GRID_W) hitEnd = true;
     if (coord == -1) coord = 0;
     if (coord == GRID_W) coord = GRID_W-1;
+
 
     if (r->dir == west || r->dir == east) {
         r->next = initLaserPath(r->startRow, coord);
@@ -211,31 +224,45 @@ void *createLaserPathTree(Cell ** grid, LaserPath ** root) {
         r->next = initLaserPath(coord, r->startCol);
     }
 
-    r->next->dir = findDirection(r->dir, grid[r->next->startRow][r->next->startCol].block_id, grid[r->next->startRow][r->next->startCol].rotation);
+    if (hitEnd) {
+        r->next->dir = nowhere;
+        return;
+    }
+
+
+
+    //ellentete a kiindulona. pl. nyugat fel megyunk, de a blokk keletioldalara erkezik
+    Direction arrivelDirection = getOppositeDir(r->dir);
+
+    r->next->dir = findDirection(arrivelDirection, grid[r->next->startRow][r->next->startCol].block_id, grid[r->next->startRow][r->next->startCol].rotation);
 
     createLaserPathTree(grid, &(r->next));
 
-    if (grid[r->startRow][r->startCol].block_id == DOUBLE_REFLECTION_WINDOW) {
-        r->next2 = initLaserPath(r->next->startRow, r->next->startCol);
-        //mivel innent egyenesen novabb megy, nem valtozik az irany ebben a szogben.
-        r->next2->dir = r->dir;
-        createLaserPathTree(grid, &(r->next2));
+
+    if (grid[r->next->startRow][r->next->startCol].block_id == DOUBLE_REFLECTION_WINDOW) {
+         r->next2 = initLaserPath(r->next->startRow, r->next->startCol);
+         //mivel innent egyenesen novabb megy, nem valtozik az irany ebben a szogben.
+         r->next2->dir = r->dir;
+         createLaserPathTree(grid, &(r->next2));
+         printf("\nREFLECTION\n");
     }
+
 }
 
 
 void printTree(LaserPath * root) {
 if (root == NULL) {
-  printf("\nSEMMI\n");
   return;
 }
 
-printf("\n{from: [%d, %d] dir: %s}\n", root->startRow,root->startCol, root->dir == west ? "bal" : root->dir ==  east ? "jobb" : root->dir == north ? "fel" : "le");
+printf("\n{from: [%d, %d] dir: %s}\n", root->startRow,root->startCol, root->dir == west ? "west" : root->dir ==  east ? "east" : root->dir == north ? "north" : root->dir == nowhere ? "sehova" : "south");
 printTree(root->next);
 printTree(root->next2);
 }
 
 void runLaser(SDL_Renderer *renderer, Cell **grid) {
+
+
 
 LaserPath *root = createRoot(grid);
 createLaserPathTree(grid, &root);
