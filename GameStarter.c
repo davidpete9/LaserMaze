@@ -27,51 +27,6 @@ char *generateFormattedStringFromNumber(int num, const char *format) {
     return formatted;
 }
 
-void initCell(bool isLeft, int block_id, int rotation, Cell *cell) {
-    cell->block_id = block_id;
-    cell->isMoveable = !isLeft;
-    cell->isPlacedByUser = false;
-    cell->rotation = rotation;
-    cell->isRotatable = !isLeft;
-    cell->isLeftSide = isLeft;
-    cell->display = true;
-}
-
-Cell **initGridStructure(cJSON *blockArr, cJSON *rightBlocks) {
-
-    Cell **grid;
-    grid = (Cell **) malloc(GRID_W * sizeof(Cell));
-    grid[0] = (Cell *) malloc((GRID_W * (GRID_W + 1)) * sizeof(Cell));
-    for (int i = 1; i < GRID_W; i++) {
-        grid[i] = grid[0] + (i * (GRID_W + 1));
-    }
-
-    for (int i = 0; i < GRID_W; i++) {
-        for (int j = 0; j <= GRID_W; j++) {
-            grid[i][j].block_id = -1;
-        }
-    }
-
-    for (int i = 0; i < cJSON_GetArraySize(blockArr); i++) {
-        cJSON *block = cJSON_GetArrayItem(blockArr, i);
-        int col = cJSON_GetObjectItem(block, MAP_BLOCKS_COL)->valueint;
-        int row = cJSON_GetObjectItem(block, MAP_BLOCKS_ROW)->valueint;
-        initCell(true,cJSON_GetObjectItem(block, MAP_BLOCKS_ID)->valueint,
-                 cJSON_GetObjectItem(block, MAP_BLOCKS_ROTATION)->valueint,
-                 &grid[row-1][col-1]);
-    }
-
-    for (int i = 0; i < cJSON_GetArraySize(rightBlocks); i++) {
-        cJSON *block = cJSON_GetArrayItem(rightBlocks, i);
-
-        int row = cJSON_GetObjectItem(block, MAP_BLOCKS_ROW)->valueint;
-        initCell(false,cJSON_GetObjectItem(block, MAP_BLOCKS_ID)->valueint,
-                 cJSON_GetObjectItem(block, MAP_BLOCKS_ROTATION)->valueint,
-                 &grid[row-1][GRID_W]);
-    }
-    return grid;
-}
-
 void printGridForDebug(Cell **grid) {
     printf("\n");
     for (int i = 0; i < GRID_W; i++) {
@@ -94,6 +49,54 @@ void printGridForDebug(Cell **grid) {
     }
 }
 
+void initCell(bool isLeft, int block_id, int rotation, Cell *cell) {
+    cell->block_id = block_id;
+    cell->isMoveable = !isLeft;
+    cell->isPlacedByUser = false;
+    cell->rotation = rotation;
+    cell->isRotatable = !isLeft;
+    cell->isLeftSide = isLeft;
+    cell->hasLaserTouchedIt = false;
+    cell->display = true;
+}
+
+Cell **initGridStructure(const cJSON *mapdata) {
+    cJSON *leftBlocks = cJSON_GetObjectItem(mapdata, MAP_BLOCKS_ARRAY);
+    cJSON *rightBlocks = cJSON_GetObjectItem(mapdata, PLACEABLE_BLOCK_ARRAY);
+    Cell **grid;
+    grid = (Cell **) malloc(GRID_W * sizeof(Cell));
+
+    grid[0] = (Cell *) malloc((GRID_W * (GRID_W + 1)) * sizeof(Cell));
+    for (int i = 1; i < GRID_W; i++) {
+        grid[i] = grid[0] + (i * (GRID_W + 1));
+    }
+    for (int i = 0; i < GRID_W; i++) {
+        for (int j = 0; j <= GRID_W; j++) {
+            grid[i][j].block_id = -1;
+        }
+    }
+
+    for (int i = 0; i < cJSON_GetArraySize(leftBlocks); i++) {
+        cJSON *block = cJSON_GetArrayItem(leftBlocks, i);
+        int col = cJSON_GetObjectItem(block, MAP_BLOCKS_COL)->valueint;
+        int row = cJSON_GetObjectItem(block, MAP_BLOCKS_ROW)->valueint;
+        initCell(true,cJSON_GetObjectItem(block, MAP_BLOCKS_ID)->valueint,
+                 cJSON_GetObjectItem(block, MAP_BLOCKS_ROTATION)->valueint,
+                 &grid[row-1][col-1]);
+    }
+
+    for (int i = 0; i < cJSON_GetArraySize(rightBlocks); i++) {
+        cJSON *block = cJSON_GetArrayItem(rightBlocks, i);
+
+        int row = cJSON_GetObjectItem(block, MAP_BLOCKS_ROW)->valueint;
+        initCell(false,cJSON_GetObjectItem(block, MAP_BLOCKS_ID)->valueint,
+                 cJSON_GetObjectItem(block, MAP_BLOCKS_ROTATION)->valueint,
+                 &grid[row-1][GRID_W]);
+    }
+
+    return grid;
+}
+
 /** Kiválasztja a megfelelő számú (5) darab pályát a szintfájlban tároltak közül.
  *  Még nincsen kész teljesen.
  * @param cJSON * allMap
@@ -110,6 +113,8 @@ cJSON *selectRandomMaps(cJSON *allMap) {
     //TODO: SELECT RANDOM 5
 }
 
+
+//!!TEMP!!!!!! FREE, malloc djgkdj
 /** Kiválasztja az összes pályát az adott szinthez.
  * A hívónak kötelessége felszabadítani a lefoglalt memóriaterületet cJSON_Delete függvénnyel.
  * @param int level
@@ -121,7 +126,6 @@ cJSON *selectMapsForLevel(int level) {
     free(filename);
     if (allMap == NULL) return NULL;
     cJSON *selectedMaps = selectRandomMaps(allMap);
-    cJSON_Delete(allMap);
     return selectedMaps;
 }
 
@@ -175,33 +179,37 @@ Page startGame(SDL_Renderer *renderer) {
         if (maps == NULL) return -1;
         /*IDEIGLENES MEGOLDÁS, CSAK A FÉLKÉSZ ÁLLAPOTHOZ, HOGY KIRAJZOLJON EGY PÁLYÁT*/
         cJSON *firstMap = cJSON_GetArrayItem(maps, 0);
-        cJSON *firstMapBlockArr = cJSON_GetObjectItem(firstMap, MAP_BLOCKS_ARRAY);
-        cJSON *rightSideBlockArr = cJSON_GetObjectItem(firstMap, PLACEABLE_BLOCK_ARRAY);
-        Cell **grid = initGridStructure(firstMapBlockArr, rightSideBlockArr);
-
         ButtonRect **buttons = createButtonsForCurrentPage(inGame);
+        Cell **grid = initGridStructure(firstMap);
 
-        drawFullMap(renderer, grid, buttons);
-        SDL_RenderPresent(renderer);
-
-
-        Page next = runGameEvents(renderer, firstMapBlockArr, &grid, buttons);
-        if (next != -1) {
-            resetScreenAndFreeButtonsArray(renderer, buttons, inGame);
-            return next;
+        GameEvent next = runGameEvents(renderer, grid, buttons);
+        while (next != leave) {
+            switch (next) {
+                case reset:
+                    free(grid[0]);
+                    free(grid);
+                    grid = initGridStructure(firstMap);
+                    next = runGameEvents(renderer, grid, buttons);;
+                    break;
+                case fire:
+                    runLaser(renderer, grid);
+                    next = runGameEvents(renderer, grid, buttons);
+                    break;
+                default: //TEMP
+                    next = leave;
+            }
         }
-
-        cJSON_Delete(rightSideBlockArr);
-        cJSON_Delete(firstMap);
-        cJSON_Delete(firstMapBlockArr);
-
+        free(grid[0]);
+        free(grid);
+        resetScreenAndFreeButtonsArray(renderer, buttons, inGame);
+        cJSON_Delete(currentData);
+        //TEMP
+        cJSON_Delete(maps);
+        return gameMenu;
     } else {
         /*
         Ebben az esetben fogja a rendszer betolteni az előző mentést.
         */
+        return gameMenu;
     }
-    cJSON_Delete(currentData);
-
-    return gameMenu;
 }
-

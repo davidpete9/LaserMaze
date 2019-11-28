@@ -1,6 +1,25 @@
 #ifndef GAMESTARTER_H_INCLUDED
 #define GAMESTARTER_H_INCLUDED
+#include <stdbool.h>
+#include <SDL2/SDL.h>
 #include "cJSON.h"
+#include "MenuEngine.h"
+
+typedef enum GameEvent {
+    leave,
+    reset,
+    pause,
+    skip,
+    fire
+} GameEvent;
+
+typedef enum Direction {
+    north,
+    east,
+    south,
+    west ,
+    nowhere
+} Direction;
 
 typedef struct Cell {
     int block_id;
@@ -10,9 +29,18 @@ typedef struct Cell {
     int rotation;
     bool isLeftSide;
     bool display;
+    bool hasLaserTouchedIt;
 } Cell;
 
-Cell **initGridStructure(cJSON *blockArr, cJSON *rightBlocks);
+typedef struct LaserPath {
+    int startRow;
+    int startCol;
+    Direction dir;
+    struct LaserPath * next;
+    struct LaserPath * next2;
+} LaserPath;
+
+Cell **initGridStructure(const cJSON *mapdata);
 char *generateFormattedStringFromNumber(int num, const char *format);
 cJSON *selectMapsForLevel(int level);
 cJSON *selectRandomMaps(cJSON *allMap);

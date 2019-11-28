@@ -20,8 +20,6 @@ extern const char * BLOCKS_TEXTURE_FILENAME_FORMAT;
 extern const SDL_Rect TABLE_RECT;
 extern const SDL_Rect RIGHT_SIDE_RECT;
 
-int getOneSquareW();
-
 enum {
     BRICK = 1,
     ONE_SIDED_WINDOW = 2,

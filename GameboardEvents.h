@@ -12,6 +12,8 @@ void drawMoveing(SDL_Renderer *renderer, Cell * cell, int x, int y);
 SDL_Rect getActualCoordsOnGrid(bool isLeftSide, int x, int y);
 Cell * getClickedOnBlock(Cell **grid, int x, int y);
 bool PlaceBlockIfCan(Cell **grid, Cell * block, int x, int y, SDL_Renderer * renderer);
-Page runGameEvents(SDL_Renderer *renderer, cJSON *blocks, Cell ***grid, ButtonRect **buttons);
+GameEvent runGameEvents(SDL_Renderer *renderer, Cell **grid, ButtonRect **buttons);
+Page handleInGameButtons(int btnId);
+void runLaser(SDL_Renderer *renderer, Cell ** grid);
 
 #endif // GAMEBOARDEVENTS_H_INCLUDED

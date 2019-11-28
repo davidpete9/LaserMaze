@@ -10,8 +10,13 @@
 #include "Constanses.h"
 #include "GameStarter.h"
 #include "cJSON.h"
+#include "WindowBounce.h"
 #include "debugmalloc.h"
 
+typedef struct Coord {
+    int x;
+    int y;
+} Coord;
 
 /** Visszatér az adott blokk textúrájával, amit fájlból töltött be.
  * A hívó felelőssége ezt késöbb SDL_DestroyTexture()-rel törölni.
@@ -121,7 +126,127 @@ bool PlaceBlockIfCan(Cell **grid, Cell * block, int x, int y, SDL_Renderer * ren
     return false;
 }
 
-Page runGameEvents(SDL_Renderer *renderer, cJSON *blocks, Cell ***grid, ButtonRect **buttons) {
+
+GameEvent handlButtonsClicks(int btnId) {
+    switch (btnId) {
+        case BACK_TO_GAME_MENU_BTN:
+            return leave;
+        case IG_FIRE_BTN:
+            return fire;
+        case IG_SKIP_BTN:
+            return skip;
+        case IG_PAUSE_BTN:
+            return pause;
+        case IG_RESET_BTN:
+            return reset;
+    }
+    return leave;
+}
+
+LaserPath * initLaserPath(int fromRow, int fromCol) {
+    LaserPath * line = (LaserPath *) malloc(sizeof(LaserPath));
+    line->startRow = fromRow;
+    line->startCol = fromCol;
+    line->dir = nowhere;
+    line->next2 = NULL;
+    line->next = NULL;
+    return line;
+}
+
+LaserPath * createRoot(Cell **grid) {
+    for (int i = 0; i < GRID_W; i++) {
+        for (int j = 0;j < GRID_W; j++) {
+            if (grid[i][j].block_id == LASER_CANNON) {
+                 LaserPath * root = initLaserPath(i,j);
+                 root->dir = findDirection(-1, LASER_CANNON, grid[i][j].rotation);
+                 return root;
+            }
+        }
+    }
+    return NULL;
+}
+
+int getTheNextTouchedBlockRowOrCol(LaserPath * line, Cell **grid) {
+    printTree(line);
+    int row = line->startRow;
+    int col = line->startCol;
+    switch (line->dir) {
+    case west:
+        while( col-1 >= 0 && grid[row][col-1].block_id == -1 ) col--;
+        return col-1;
+    case south:
+        while(row+1 < GRID_W && grid[row+1][col].block_id == -1) row++;
+        return row+1;
+    case north:
+        while(row-1 >= 0 && grid[row-1][col].block_id == -1) row--;
+        return row-1;
+    case east:
+        while(col+1 < GRID_W && grid[row][col+1].block_id == -1) col++;
+        return col+1;
+    default:
+        return 0;
+    }
+}
+/**
+Építési folyamat:
+Megvan: az aktuális root koordinátái
+az aktuális rootból kiinduló vonal iránya
+
+Cél: toKoordináták beállítása + next nek a from, és a dir
+*/
+void *createLaserPathTree(Cell ** grid, LaserPath ** root) {
+
+    LaserPath * r = *root;
+    if (r->dir == nowhere) return root;
+
+    //temp
+    int coord = getTheNextTouchedBlockRowOrCol(r, grid);
+    if (coord == -1) coord = 0;
+    if (coord == GRID_W) coord = GRID_W-1;
+
+    if (r->dir == west || r->dir == east) {
+        r->next = initLaserPath(r->startRow, coord);
+    }
+    else {
+        r->next = initLaserPath(coord, r->startCol);
+    }
+
+    r->next->dir = findDirection(r->dir, grid[r->next->startRow][r->next->startCol].block_id, grid[r->next->startRow][r->next->startCol].rotation);
+
+    createLaserPathTree(grid, &(r->next));
+
+    if (grid[r->startRow][r->startCol].block_id == DOUBLE_REFLECTION_WINDOW) {
+        r->next2 = initLaserPath(r->next->startRow, r->next->startCol);
+        //mivel innent egyenesen novabb megy, nem valtozik az irany ebben a szogben.
+        r->next2->dir = r->dir;
+        createLaserPathTree(grid, &(r->next2));
+    }
+}
+
+
+void printTree(LaserPath * root) {
+if (root == NULL) {
+  printf("\nSEMMI\n");
+  return;
+}
+
+printf("\n{from: [%d, %d] dir: %s}\n", root->startRow,root->startCol, root->dir == west ? "bal" : root->dir ==  east ? "jobb" : root->dir == north ? "fel" : "le");
+printTree(root->next);
+printTree(root->next2);
+}
+
+void runLaser(SDL_Renderer *renderer, Cell **grid) {
+
+LaserPath *root = createRoot(grid);
+createLaserPathTree(grid, &root);
+printTree(root);
+//if (root == NULL) return;
+//todo freee
+}
+
+GameEvent runGameEvents(SDL_Renderer *renderer, Cell **grid, ButtonRect **buttons) {
+    drawFullMap(renderer, grid, buttons);
+    SDL_RenderPresent(renderer);
     SDL_Event event;
     bool isDragBlock = false;
     Cell * clickedOn;
@@ -134,16 +259,23 @@ Page runGameEvents(SDL_Renderer *renderer, cJSON *blocks, Cell ***grid, ButtonRe
 
                     int clickedOnBtnId = getClickedButtonIdIfExists(buttons, inGame, event.button.x, event.button.y);
                     if (clickedOnBtnId != -1) {
-                        Page nextPage = handleBtnClickAndGetNextPageIfShould(clickedOnBtnId, inGame);
-                        if (nextPage != -1) return nextPage;
+                        return handlButtonsClicks(clickedOnBtnId);
                     }
 
                     if (!isDragBlock) {
-                        clickedOn = getClickedOnBlock(*grid, event.button.x, event.button.y);
+                        clickedOn = getClickedOnBlock(grid, event.button.x, event.button.y);
                         if (clickedOn != NULL) {
                         clickedOn->display = false;
                         isDragBlock = true;
                         }
+                    }
+                }
+                else if (event.button.button == SDL_BUTTON_RIGHT) {
+                    Cell * actualBlock = getClickedOnBlock(grid, event.button.x, event.button.y);
+                    if (actualBlock != NULL) {
+                       actualBlock->rotation = (actualBlock->rotation+1) % 4;
+                       drawFullMap(renderer, grid, buttons);
+                       SDL_RenderPresent(renderer);
                     }
                 }
                 break;
@@ -151,26 +283,26 @@ Page runGameEvents(SDL_Renderer *renderer, cJSON *blocks, Cell ***grid, ButtonRe
 
                 if (event.button.button == SDL_BUTTON_LEFT) {
                     if (isDragBlock) {
-                        if (!PlaceBlockIfCan(*grid, clickedOn, event.button.x, event.button.y, renderer)) {
+                        if (!PlaceBlockIfCan(grid, clickedOn, event.button.x, event.button.y, renderer)) {
                             clickedOn->display = true;
                         }
                         else {
                             clickedOn->block_id = -1;
                         }
                         isDragBlock = false;
-                        drawFullMap(renderer, *grid, buttons);
+                        drawFullMap(renderer, grid, buttons);
                         SDL_RenderPresent(renderer);
                         }
                     }
                 break;
             case SDL_MOUSEMOTION:
                 if (isDragBlock && clickedOn != NULL) {
-                    drawFullMap(renderer, *grid, buttons);
+                    drawFullMap(renderer, grid, buttons);
                     drawMoveing(renderer, clickedOn, event.motion.x, event.motion.y);
                     SDL_RenderPresent(renderer);
                 }
         }
 
     }
-    return -1;
+    return leave;
 }

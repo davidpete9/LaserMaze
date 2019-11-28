@@ -21,3 +21,4 @@ const SDL_Rect RIGHT_SIDE_RECT = (SDL_Rect) {750,50,120,600};
 
 
 
+
