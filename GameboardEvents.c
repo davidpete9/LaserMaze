@@ -13,11 +13,6 @@
 #include "WindowBounce.h"
 #include "debugmalloc.h"
 
-typedef struct Coord {
-    int x;
-    int y;
-} Coord;
-
 /** Visszatér az adott blokk textúrájával, amit fájlból töltött be.
  * A hívó felelőssége ezt késöbb SDL_DestroyTexture()-rel törölni.
  * @param SDL_Renderer *renderer,
@@ -143,7 +138,8 @@ GameEvent handlButtonsClicks(int btnId) {
     return leave;
 }
 
-LaserPath * initLaserPath(int fromRow, int fromCol) {
+LaserPath * initLaserPath(int fromRow, int fromCol, Cell **grid) {
+    grid[fromRow][fromCol].hasLaserTouchedIt = true;
     LaserPath * line = (LaserPath *) malloc(sizeof(LaserPath));
     line->startRow = fromRow;
     line->startCol = fromCol;
@@ -157,7 +153,7 @@ LaserPath * createRoot(Cell **grid) {
     for (int i = 0; i < GRID_W; i++) {
         for (int j = 0;j < GRID_W; j++) {
             if (grid[i][j].block_id == LASER_CANNON) {
-                 LaserPath * root = initLaserPath(i,j);
+                 LaserPath * root = initLaserPath(i,j, grid);
                  root->dir = findDirection(-1, LASER_CANNON, grid[i][j].rotation);
                  return root;
             }
@@ -217,11 +213,12 @@ void *createLaserPathTree(Cell ** grid, LaserPath ** root) {
     if (coord == GRID_W) coord = GRID_W-1;
 
 
+    //todo: szepites, itt kicsit katyvaszos
     if (r->dir == west || r->dir == east) {
-        r->next = initLaserPath(r->startRow, coord);
+        r->next = initLaserPath(r->startRow, coord, grid);
     }
     else {
-        r->next = initLaserPath(coord, r->startCol);
+        r->next = initLaserPath(coord, r->startCol, grid);
     }
 
     if (hitEnd) {
@@ -240,11 +237,10 @@ void *createLaserPathTree(Cell ** grid, LaserPath ** root) {
 
 
     if (grid[r->next->startRow][r->next->startCol].block_id == DOUBLE_REFLECTION_WINDOW) {
-         r->next2 = initLaserPath(r->next->startRow, r->next->startCol);
+         r->next2 = initLaserPath(r->next->startRow, r->next->startCol, grid);
          //mivel innent egyenesen novabb megy, nem valtozik az irany ebben a szogben.
          r->next2->dir = r->dir;
          createLaserPathTree(grid, &(r->next2));
-         printf("\nREFLECTION\n");
     }
 
 }
@@ -260,15 +256,56 @@ printTree(root->next);
 printTree(root->next2);
 }
 
-void runLaser(SDL_Renderer *renderer, Cell **grid) {
+
+void drawLaser(SDL_Renderer * renderer, LaserPath *r) {
+    if (r == NULL || r->dir == nowhere) return;
+    int fromX = r->startCol;
+    int fromY = r->startRow;
+
+    if (r->next != NULL) {
+        int toX = r->next->startCol;
+        int toY = r->next->startRow;
 
 
+
+        if (fromX == toX && fromY == toY) return;
+        lineRGBA(renderer,
+                 TABLE_RECT.x+(fromX*SQUARE_W)+SQUARE_W/2,
+                 TABLE_RECT.y+(fromY*SQUARE_W)+SQUARE_W/2,
+                 TABLE_RECT.x+(toX*SQUARE_W)+SQUARE_W/2,
+                 TABLE_RECT.y+(toY*SQUARE_W)+SQUARE_W/2, 255,0,0,255);
+    }
+    if (r->next2 != NULL) {
+        int toX = r->next2->startCol;
+        int toY = r->next2->startRow;
+
+
+
+        if (fromX == toX && fromY == toY) return;
+        lineRGBA(renderer,
+                 TABLE_RECT.x+(fromX*SQUARE_W)+SQUARE_W/2,
+                 TABLE_RECT.y+(fromY*SQUARE_W)+SQUARE_W/2,
+                 TABLE_RECT.x+(toX*SQUARE_W)+SQUARE_W/2,
+                 TABLE_RECT.y+(toY*SQUARE_W)+SQUARE_W/2, 255,0,0,255);
+    }
+
+    drawLaser(renderer, r->next);
+    drawLaser(renderer, r->next2);
+
+    //Itherative solution
+
+}
+
+
+
+LaserPath * runLaser(SDL_Renderer *renderer, Cell **grid) {
 
 LaserPath *root = createRoot(grid);
 createLaserPathTree(grid, &root);
 printTree(root);
-//if (root == NULL) return;
-//todo freee
+drawLaser(renderer, root);
+SDL_RenderPresent(renderer);
+return root;
 }
 
 GameEvent runGameEvents(SDL_Renderer *renderer, Cell **grid, ButtonRect **buttons) {

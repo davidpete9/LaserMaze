@@ -1,3 +1,8 @@
+#ifdef _WIN32
+#include <Windows.h>
+#else
+#include <unistd.h>
+#endif
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL2_gfxPrimitives.h>
@@ -146,7 +151,6 @@ void setLevel(cJSON *structure, int level) {
     cJSON_AddItemToObject(structure, LEVEL_STR, cJSON_CreateNumber((int) level));
 }
 
-
 /** Az actual.json fájlt létrehozza, és elmenti benne az aktuális levelt.
  * @param int level
  * */
@@ -158,6 +162,32 @@ void initializeFileWithLevel(int level) {
     setLevel(structure, level);
 
     printStructureIntoFileAndClose(fp, structure);
+}
+
+bool checkSolution(LaserPath * root, Cell ** grid) {
+    for (int i = 0; i < GRID_W; i++) {
+        for (int j = 0; j < GRID_W; j++) {
+            if (grid[i][j].block_id != -1 && grid[i][j].display  && !grid[i][j].hasLaserTouchedIt) {
+                if (!grid[i][j].isPlacedByUser) return false;
+            }
+        }
+    }
+    return true;
+}
+
+void resetGridAfterShot(Cell **grid) {
+    for (int i = 0; i < GRID_W; i++) {
+        for (int j = 0; j < GRID_W; j++) {
+            grid[i][j].hasLaserTouchedIt = false;
+        }
+    }
+}
+
+void freeTree(LaserPath *r) {
+    if (r == NULL ) return;
+    freeTree(r->next);
+    freeTree(r->next2);
+    free(r);
 }
 
 /** Elindítja a játékot, úgy hogy előszőr betölti a szintet az actual.json fájlból, majd kiválasztaja az aktuális
@@ -181,7 +211,7 @@ Page startGame(SDL_Renderer *renderer) {
         cJSON *firstMap = cJSON_GetArrayItem(maps, 0);
         ButtonRect **buttons = createButtonsForCurrentPage(inGame);
         Cell **grid = initGridStructure(firstMap);
-
+        LaserPath * path;
         GameEvent next = runGameEvents(renderer, grid, buttons);
         while (next != leave) {
             switch (next) {
@@ -192,7 +222,30 @@ Page startGame(SDL_Renderer *renderer) {
                     next = runGameEvents(renderer, grid, buttons);;
                     break;
                 case fire:
-                    runLaser(renderer, grid);
+                    path = runLaser(renderer, grid);
+
+                    StringToDisplay status;
+                    status.fontSize = 20;
+                    status.pos = (SDL_Rect){100,0,300,50};
+
+                    if (checkSolution(path, grid)) {
+
+                        status.title = "Helyes! Pálya teljesítve.";
+                        status.titleColor = (SDL_Color) {0, 255, 0, 255};
+                    }
+                    else {
+                        status.title = "Rossz megoldás!";
+                        status.titleColor = (SDL_Color) {255, 0, 0, 255};
+                    }
+                        writeTextToDisplay(renderer, &status);
+                        SDL_RenderPresent(renderer);
+                    #ifdef _WIN32
+                        Sleep(5000);
+                    #else
+                        usleep(5000);  /* sleep for 100 milliSeconds */
+                    #endif
+                    freeTree(path);
+                    resetGridAfterShot(grid);
                     next = runGameEvents(renderer, grid, buttons);
                     break;
                 default: //TEMP

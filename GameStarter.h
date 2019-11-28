@@ -13,14 +13,6 @@ typedef enum GameEvent {
     fire
 } GameEvent;
 
-typedef enum Direction {
-    north,
-    east,
-    south,
-    west ,
-    nowhere
-} Direction;
-
 typedef struct Cell {
     int block_id;
     bool isPlacedByUser;
@@ -32,6 +24,14 @@ typedef struct Cell {
     bool hasLaserTouchedIt;
 } Cell;
 
+typedef enum Direction {
+    north,
+    east,
+    south,
+    west ,
+    nowhere
+} Direction;
+
 typedef struct LaserPath {
     int startRow;
     int startCol;
@@ -39,6 +39,7 @@ typedef struct LaserPath {
     struct LaserPath * next;
     struct LaserPath * next2;
 } LaserPath;
+
 
 Cell **initGridStructure(const cJSON *mapdata);
 char *generateFormattedStringFromNumber(int num, const char *format);
