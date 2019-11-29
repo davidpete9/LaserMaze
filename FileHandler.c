@@ -91,6 +91,7 @@ void printItForDebugging(cJSON *data) {
 */
 cJSON * getParsedJSONContentOfFile(const char *filename) {
  FILE *fp = openFileForRead(filename);
+ if (fp == NULL) return NULL;
  char * dataString = readFileContent(fp);
  cJSON* parsed = cJSON_Parse(dataString);
  free(dataString);

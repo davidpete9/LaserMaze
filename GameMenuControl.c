@@ -32,7 +32,7 @@ Page clickedOnLevel(int btnId) {
 
     //IDEIGLENESEN, MERT A FELKESZ ALLAPOTBAN NINCSEN KÉSZ AZ ÖSSZZES PÁLYA, ÉS HOGY LEHESSEN TESZTELNI
     //TEHÁT MIVEL AZ ELSŐ PÁLYA PÁR EL VAN KÉSZíTVE:
-    btnId = 1;
+    //btnId = 1;
 
     initializeFileWithLevel(btnId);
 
