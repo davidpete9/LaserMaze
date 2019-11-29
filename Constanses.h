@@ -4,6 +4,8 @@
 #define S_WIDTH 900
 #define S_HEIGHT 720
 
+#define MAPS_IN_A_LEVEL 5
+
 extern const char *IS_GAME_INITIALIZED;
 extern const char *LEVEL_STR;
 extern const char *MAP_ID;
@@ -35,7 +37,6 @@ enum {
     SQUARE_W = 120, //TABLERECT.w / GRID_W
 
     BLOCK_TEXTURE_W = 110,
-    MAPS_IN_A_LEVEL = 5,
 
     SMALLEST_FONT_SIZE = 10,
     BIGGEST_FONT_SIZE = 48,

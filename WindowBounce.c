@@ -51,18 +51,18 @@ Direction findDirection(Direction from, int block_type, int rotation) {
         case LASER_CANNON:
             return getLaserCannonDirection(rotation);
         case ONE_SIDED_WINDOW:
-            return getWindowDirection(from, rotation);
+            return getWindowDirection(from, (rotation+3)%4);
         case TWO_SIDED_WINDOW:
-            return getTwoSidedWindowDirection(from, rotation);
+            return getTwoSidedWindowDirection(from, (rotation+1)%4);
         case BRICK:
             return nowhere;
         case GOAL_BLOCK:
                //Mivel a rajzon alapbol kettovel oebb van fotrgatva mint a tükör,
                //és hogy lehessen rajta használni az előző függvényeket. Felfogható egy egyoldalú tükörnek.
-               return getWindowDirection(from, (rotation+2)%4);
+               return getWindowDirection(from, (rotation+3)%4);
         case DOUBLE_REFLECTION_WINDOW:
             //Mivel a rajzon egyel odebb van. A masik reflexiot nem ez a fuggveny fogja kezelni.
-            return getTwoSidedWindowDirection(from, (rotation+1)%4);
+            return getTwoSidedWindowDirection(from, rotation);
         default:
             return nowhere;
     }

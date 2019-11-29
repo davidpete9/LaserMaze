@@ -162,21 +162,26 @@ LaserPath * createRoot(Cell **grid) {
     return NULL;
 }
 
+//bug go thrugh laser cannon
+bool canBeNext(Cell * cell) {
+    return cell->block_id != -1 && !cell->hasLaserTouchedIt;
+}
+
 int getTheNextTouchedBlockRowOrCol(LaserPath * line, Cell **grid) {
     int row = line->startRow;
     int col = line->startCol;
     switch (line->dir) {
     case west:
-        while( col-1 >= 0 && grid[row][col-1].block_id == -1 ) col--;
+        while( col-1 >= 0 && !canBeNext(&grid[row][col-1])) col--;
         return col-1;
     case south:
-        while(row+1 < GRID_W && grid[row+1][col].block_id == -1) row++;
+        while(row+1 < GRID_W && !canBeNext(&grid[row+1][col])) row++;
         return row+1;
     case north:
-        while(row-1 >= 0 && grid[row-1][col].block_id == -1) row--;
+        while(row-1 >= 0 && !canBeNext(&grid[row-1][col])) row--;
         return row-1;
     case east:
-        while(col+1 < GRID_W && grid[row][col+1].block_id == -1) col++;
+        while(col+1 < GRID_W && !canBeNext(&grid[row][col+1])) col++;
         return col+1;
     default:
         return 0;

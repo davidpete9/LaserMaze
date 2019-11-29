@@ -15,6 +15,7 @@
 #include "Constanses.h"
 #include "FileHandler.h"
 #include "GameboardEvents.h"
+#include <time.h>
 #include "cJSON.h"
 #include "debugmalloc.h"
 
@@ -102,6 +103,8 @@ Cell **initGridStructure(const cJSON *mapdata) {
     return grid;
 }
 
+
+
 /** Kiválasztja a megfelelő számú (5) darab pályát a szintfájlban tároltak közül.
  *  Még nincsen kész teljesen.
  * @param cJSON * allMap
@@ -118,20 +121,39 @@ cJSON *selectRandomMaps(cJSON *allMap) {
     //TODO: SELECT RANDOM 5
 }
 
+bool isArrayIncludes(int * arr, int length, int n) {
+    for (int i = 0;i < length; i++) {
+        if (arr[i] == n) return true;
+    }
+    return false;
+}
 
-//!!TEMP!!!!!! FREE, malloc djgkdj
+int * selectRandomIndexes(int length, int * array_length) {
+    if (length <= 0) return NULL;
+    srand(time(0));
+
+    *array_length = length >= MAPS_IN_A_LEVEL ? MAPS_FILENAME_FORMAT : length;
+
+    int * random_indexes = (int * ) malloc((*array_length)*sizeof(int));
+    for (int i = 0; i < *array_length; i++) random_indexes[i] = -1;
+    for (int i = 0; i < *array_length; i++) {
+        int r_num = rand() % *array_length;
+        while (isArrayIncludes(random_indexes, *array_length, r_num)) r_num = rand() % *array_length;
+        random_indexes[i] = r_num;
+    }
+    return random_indexes;
+}
+
 /** Kiválasztja az összes pályát az adott szinthez.
  * A hívónak kötelessége felszabadítani a lefoglalt memóriaterületet cJSON_Delete függvénnyel.
  * @param int level
  * @return cJSON * selectedMaps
  * */
-cJSON *selectMapsForLevel(int level) {
+cJSON *getMapsForLevel(int level) {
     char *filename = generateFormattedStringFromNumber(level, MAPS_FILENAME_FORMAT);
     cJSON *allMap = getParsedJSONContentOfFile(filename);
     free(filename);
-    if (allMap == NULL) return NULL;
-    cJSON *selectedMaps = selectRandomMaps(allMap);
-    return selectedMaps;
+    return allMap;
 }
 
 //tofo wtf...
@@ -190,6 +212,12 @@ void freeTree(LaserPath *r) {
     free(r);
 }
 
+void loadNextMap(cJSON * maps, int ind, Cell ***grid, cJSON **actualMap) {
+    if (maps == NULL) return;
+    *actualMap = cJSON_GetArrayItem(maps, ind);
+    *grid = initGridStructure(*actualMap);
+}
+
 /** Elindítja a játékot, úgy hogy előszőr betölti a szintet az actual.json fájlból, majd kiválasztaja az aktuális
  * pálylákat, és kirajzolja az elsőt. Amennyiben a játék sikeresen elindult, a pálya kirajzolódott true-val tér vissza, különben valamilyen
  * hiba esetén false-sal.
@@ -205,33 +233,63 @@ Page startGame(SDL_Renderer *renderer) {
 
     if (!isGameInitialized) {
 
-        cJSON *maps = selectMapsForLevel(level);
-        if (maps == NULL) return -1;
-        /*IDEIGLENES MEGOLDÁS, CSAK A FÉLKÉSZ ÁLLAPOTHOZ, HOGY KIRAJZOLJON EGY PÁLYÁT*/
-        cJSON *firstMap = cJSON_GetArrayItem(maps, 0);
         ButtonRect **buttons = createButtonsForCurrentPage(inGame);
-        Cell **grid = initGridStructure(firstMap);
+
+        cJSON *maps = getMapsForLevel(level);
+        if (maps == NULL) {
+            printf("NINCSENEK MAPOK, terminate.");
+            StringToDisplay s2;
+            s2.fontSize = 20;
+            s2.pos = (SDL_Rect){100,0,300,50};
+            SDL_SetRenderDrawColor(renderer, 0,0,0,255);
+            SDL_RenderFillRect(renderer, &s2.pos);
+
+            s2.title = "NINCSENEK EHHEZ A SZINTHEZ MAPOK MÉG.";
+            s2.titleColor = (SDL_Color) {0, 255, 0, 255};
+
+            writeTextToDisplay(renderer, &s2);
+            SDL_RenderPresent(renderer);
+            Sleep(3000);
+            return gameMenu;
+        }
+
+        int selected_maps_num;
+        int * selectedMapIndexes = selectRandomIndexes(cJSON_GetArraySize(maps),&selected_maps_num);
+        printf("\n$$$$ RANDOM SZAMOK (beetween 0 and %d)$$$$$\n", cJSON_GetArraySize(maps));
+        for (int i = 0; i < selected_maps_num; i++) {
+            printf("%d ", selectedMapIndexes[i]);
+        }
+
+        int map_index = 0;
+        StringToDisplay s2;
+        cJSON *actualMap;
+        Cell **grid;
+        loadNextMap(maps, selectedMapIndexes[map_index++], &grid, &actualMap);
+
         LaserPath * path;
         GameEvent next = runGameEvents(renderer, grid, buttons);
         while (next != leave) {
+
             switch (next) {
                 case reset:
                     free(grid[0]);
                     free(grid);
-                    grid = initGridStructure(firstMap);
+                    grid = initGridStructure(actualMap);
                     next = runGameEvents(renderer, grid, buttons);;
                     break;
                 case fire:
                     path = runLaser(renderer, grid);
-
                     StringToDisplay status;
                     status.fontSize = 20;
                     status.pos = (SDL_Rect){100,0,300,50};
 
                     if (checkSolution(path, grid)) {
-
+                        free(grid[0]);
+                        free(grid);
                         status.title = "Helyes! Pálya teljesítve.";
                         status.titleColor = (SDL_Color) {0, 255, 0, 255};
+                        loadNextMap(maps, selectedMapIndexes[map_index++], &grid, &actualMap);
+
                     }
                     else {
                         status.title = "Rossz megoldás!";
@@ -239,19 +297,50 @@ Page startGame(SDL_Renderer *renderer) {
                     }
                         writeTextToDisplay(renderer, &status);
                         SDL_RenderPresent(renderer);
-                    #ifdef _WIN32
-                        Sleep(5000);
-                    #else
-                        usleep(5000);  /* sleep for 100 milliSeconds */
-                    #endif
+
+                    Sleep(2500);
                     freeTree(path);
+
+                    if (map_index > selected_maps_num) {
+                            next = finished;
+                            continue;
+                    }
+
                     resetGridAfterShot(grid);
                     next = runGameEvents(renderer, grid, buttons);
+                    break;
+                case skip:
+                    free(grid[0]);
+                    free(grid);
+
+                    loadNextMap(maps, selectedMapIndexes[map_index++], &grid, &actualMap);
+                    if (map_index > selected_maps_num) {
+                            next = finished;
+                            continue;
+                        }
+                    next = runGameEvents(renderer, grid, buttons);
+                    break;
+                case finished:
+                    printf("FINISHED");
+                    s2.fontSize = 20;
+                    s2.pos = (SDL_Rect){100,0,300,50};
+                    SDL_SetRenderDrawColor(renderer, 0,0,0,255);
+                    SDL_RenderFillRect(renderer, &s2.pos);
+
+                    s2.title = "Szint sikeresen végigcsinálva. Vissza a főmenübe...";
+                    s2.titleColor = (SDL_Color) {0, 255, 0, 255};
+
+                    writeTextToDisplay(renderer, &s2);
+                    SDL_RenderPresent(renderer);
+                    Sleep(3000);
+
+                    next = leave;
                     break;
                 default: //TEMP
                     next = leave;
             }
         }
+        free(selectedMapIndexes);
         free(grid[0]);
         free(grid);
         resetScreenAndFreeButtonsArray(renderer, buttons, inGame);

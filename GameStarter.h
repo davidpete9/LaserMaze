@@ -10,7 +10,8 @@ typedef enum GameEvent {
     reset,
     pause,
     skip,
-    fire
+    fire,
+    finished
 } GameEvent;
 
 typedef struct Cell {
