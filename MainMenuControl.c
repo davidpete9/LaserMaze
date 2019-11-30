@@ -22,7 +22,7 @@ Page getNextPageOnMainMenuClickOrQuit(int buttonId) {
         case M_EXIT_BTN:
              return exitgame;
         case M_GAME_BTN:
-            return isAnyGameInitialized() ? inGame : gameMenu;
+            return gameMenu;
         case M_SETTINGS_BTN:
             return settings;
         default:

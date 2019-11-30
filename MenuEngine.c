@@ -192,7 +192,7 @@ Page handleBtnClickAndGetNextPageIfShould(int currentButtonId, Page currentPage)
         case gameMenu:
             return clickedOnLevel(currentButtonId);
         case inGame:
-            if (currentButtonId == BACK_TO_GAME_MENU_BTN) return gameMenu;
+            if (currentButtonId == IG_BACK_BTN) return gameMenu;
         case settings:
         default:
             return mainMenu;
@@ -215,6 +215,15 @@ void handleCursor(ButtonRect **buttons, int x, int y, Page currentPage) {
     SDL_SetCursor(cursor);
 }
 
+void drawBackground(SDL_Renderer *renderer) {
+    SDL_Texture *background = IMG_LoadTexture(renderer, BACKGROUND_FILE_NAME);
+    SDL_Rect dest = (SDL_Rect) {0,0,S_WIDTH, S_HEIGHT};
+    SDL_RenderCopy(renderer, background, NULL, &dest);
+    SDL_DestroyTexture(background);
+
+    SDL_RenderPresent(renderer);
+}
+
 /** Visszaállítja a képernyőt alapállapotba. A függvény akkor fut le, ha oldalváltás történi a menüben.
  *  Felszabadítja az összes, gombok számára lefoglalt memóriaterületet.
  *  @param SDL_Renderer * renderer,
@@ -230,11 +239,7 @@ void resetScreenAndFreeButtonsArray(SDL_Renderer *renderer, ButtonRect **buttons
         free(buttons[i]);
     }
     free(buttons);
-
-    SDL_SetRenderDrawColor(renderer, DEFAULT_BACKGROUND_COLOR.r, DEFAULT_BACKGROUND_COLOR.g,
-                           DEFAULT_BACKGROUND_COLOR.b, DEFAULT_BACKGROUND_COLOR.a);
-    SDL_RenderClear(renderer);
-    SDL_RenderPresent(renderer);
+    drawBackground(renderer);
 }
 
 ButtonRect ** createButtonsForCurrentPage(Page currentPage) {
@@ -250,6 +255,7 @@ ButtonRect ** createButtonsForCurrentPage(Page currentPage) {
             break;
         case gameMenu:
             buttons = createAllGameButton();
+            refreshButtonColors(buttons);
             break;
         case inGame:
             buttons = createInGameButtons();

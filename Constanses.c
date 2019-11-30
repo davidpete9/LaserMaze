@@ -6,8 +6,11 @@ const char *IS_GAME_INITIALIZED = "isGameInitialized";
 const char *USED_SKIP_BUTTON = "hasSkipButtonUsed";
 const char *SELECTED_MAP_INDEXES_ARR = "selectedMapIndexes";
 const char *FINISHED_MAPS_ARR = "finishedMaps";
+const char *ELAPSED_TIME_STR = "elapsedTime";
+const char *TIME_BONUS_STR = "hasTimeBonus";
+const char *GET_TIME_BONUS_FROM = "getTimeBonusFrom";
 
-const char *LEVEL_STR = "currentLevel";
+const char *LEVEL_STR = "level";
 const char *MAP_ID = "id";
 const char *MAP_BLOCKS_ARRAY = "blocks_on_grid";
 const char *MAP_BLOCKS_ID = "block_id";
@@ -19,6 +22,7 @@ const char *PLACEABLE_BLOCK_ARRAY = "placeable_blocks";
 const char * ACTUAL_STATUS_FILE_NAME = "actual.json";
 const char * MAPS_FILENAME_FORMAT = "maps/%d_level.json";
 const char * LEVELS_FILE_NAME = "levels.json";
+const char * BACKGROUND_FILE_NAME = "hatter.jpg";
 const char * BLOCKS_TEXTURE_FILENAME_FORMAT = "blocks/%d.png";
 
 const SDL_Rect TABLE_RECT = (SDL_Rect) {120,50,600,600};

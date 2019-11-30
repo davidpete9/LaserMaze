@@ -7,12 +7,14 @@
 
 typedef enum GameEvent {
     leave,
+    stop,
     reset,
     pause,
     skip,
     fire,
     finished,
-    restart
+    restart,
+    beforeleave
 } GameEvent;
 
 typedef enum Direction {
@@ -62,7 +64,7 @@ int * selectRandomIndexes(int length, int * array_length);
 void setGameInitalizationStatus(cJSON *structure, bool val);
 void setLevel(cJSON *structure, int level);
 Page startGame(SDL_Renderer *renderer);
-bool isAnyGameInitialized();
+int getInitializedGameLevelIfExists();
 void writeGameCounterToDisplay(SDL_Renderer *renderer, int level, int mapInd, int size, int mapId);
 void writeMessageToTop(SDL_Renderer *renderer, char * text, bool isSuccess);
 

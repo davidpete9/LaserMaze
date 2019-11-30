@@ -32,7 +32,7 @@ FILE *OpenOrCreateFile(const char *filename) {
  * @param cJSON * structure
  * @param FILE * fp
  * */
-void printStructureIntoFileAndClose(const char *filename, cJSON * structure) {
+void printStructureIntoFileAndClose(const char *filename, cJSON *structure) {
     FILE *fp = OpenOrCreateFile(filename);
     fprintf(fp, cJSON_Print(structure));
     fclose(fp);
@@ -43,8 +43,8 @@ void printStructureIntoFileAndClose(const char *filename, cJSON * structure) {
  * @param const char * filename
  * @return FILE *fp
  * */
-FILE * openFileForRead(const char *filename) {
-    FILE * fp;
+FILE *openFileForRead(const char *filename) {
+    FILE *fp;
     fp = fopen(filename, "rt");
     return fp;
 }
@@ -53,10 +53,10 @@ FILE * openFileForRead(const char *filename) {
  * @param FILE *fp
  * @return int len
  * */
-int getFileLength(FILE * fp) {
-    fseek (fp, 0, SEEK_END);
-    int len = ftell (fp);
-    fseek (fp, 0, SEEK_SET);
+int getFileLength(FILE *fp) {
+    fseek(fp, 0, SEEK_END);
+    int len = ftell(fp);
+    fseek(fp, 0, SEEK_SET);
     return len;
 }
 
@@ -65,14 +65,14 @@ int getFileLength(FILE * fp) {
  * @param FILE *fp
  * @return cJSON * parsed
  * */
-char * readFileContent(FILE * fp) {
+char *readFileContent(FILE *fp) {
     int len = getFileLength(fp);
     if (len == 0) return NULL;
 
-    char *dataString = (char *) malloc((len+1)*sizeof(char));
+    char *dataString = (char *) malloc((len + 1) * sizeof(char));
     dataString[0] = '\0';
 
-    char * buffer = (char *) malloc((len+1)*sizeof(char));
+    char *buffer = (char *) malloc((len + 1) * sizeof(char));
 
     while (fscanf(fp, "%s", buffer) == 1) strcat(dataString, buffer);
     dataString[len] = '\0';
@@ -81,7 +81,7 @@ char * readFileContent(FILE * fp) {
 }
 
 void printItForDebugging(cJSON *data) {
- printf("\n %s \n",cJSON_Print(data));
+    printf("\n %s \n", cJSON_Print(data));
 }
 
 /** Beolvassa a kapott JSON fájl teljes tartalmát, és cJSON struktúrává alakítja.
@@ -90,14 +90,14 @@ void printItForDebugging(cJSON *data) {
  * @param const char * filename
  * @return cJSON * parsed
 */
-cJSON * getParsedJSONContentOfFile(const char *filename) {
- FILE *fp = openFileForRead(filename);
- if (fp == NULL) return NULL;
- char * dataString = readFileContent(fp);
- cJSON* parsed = cJSON_Parse(dataString);
- free(dataString);
- fclose(fp);
- return parsed;
+cJSON *getParsedJSONContentOfFile(const char *filename) {
+    FILE *fp = openFileForRead(filename);
+    if (fp == NULL) return NULL;
+    char *dataString = readFileContent(fp);
+    cJSON *parsed = cJSON_Parse(dataString);
+    free(dataString);
+    fclose(fp);
+    return parsed;
 }
 
 

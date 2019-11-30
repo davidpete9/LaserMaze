@@ -11,6 +11,10 @@ extern const char *USED_SKIP_BUTTON;
 extern const char *SELECTED_MAP_INDEXES_ARR;
 extern const char *FINISHED_MAPS_ARR;
 extern const char *LEVELS_FILE_NAME;
+extern const char *ELAPSED_TIME_STR;
+extern const char *TIME_BONUS_STR;
+extern const char *GET_TIME_BONUS_FROM;
+extern const char *BACKGROUND_FILE_NAME;
 
 extern const char *LEVEL_STR;
 extern const char *MAP_ID;
@@ -67,9 +71,6 @@ enum {
 
     //Game menu  buttons
     //all number between: 1 - num of levels
-
-
-    BACK_TO_GAME_MENU_BTN = 888,
     BACK_TO_MAIN_BTN = 999,
 
     //In game buttons
@@ -77,6 +78,7 @@ enum {
     IG_RESET_BTN = 302,
     IG_SKIP_BTN = 303,
     IG_PAUSE_BTN = 304,
+    IG_BACK_BTN =305
 };
 
 

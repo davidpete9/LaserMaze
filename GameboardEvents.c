@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <time.h>
 #include "MenuEngine.h"
 #include "Constanses.h"
 #include "GameStarter.h"
@@ -87,6 +88,7 @@ void drawGrid(SDL_Renderer *renderer) {
 
 
 void drawFullMap(SDL_Renderer *renderer, Cell **grid, ButtonRect **buttons) {
+
     SDL_SetRenderDrawColor(renderer,0,0,0,255);
     SDL_RenderFillRect(renderer, &FULL_GAME_TABLE_RECT);
     drawAllCurrentButtons(renderer, buttons, inGame);
@@ -127,8 +129,8 @@ bool PlaceBlockIfCan(Cell **grid, Cell * block, int x, int y, SDL_Renderer * ren
 
 GameEvent handlButtonsClicks(int btnId) {
     switch (btnId) {
-        case BACK_TO_GAME_MENU_BTN:
-            return leave;
+        case IG_BACK_BTN:
+            return beforeleave;
         case IG_FIRE_BTN:
             return fire;
         case IG_SKIP_BTN:
@@ -137,8 +139,9 @@ GameEvent handlButtonsClicks(int btnId) {
             return pause;
         case IG_RESET_BTN:
             return reset;
+        default:
+            return beforeleave;
     }
-    return leave;
 }
 
 LaserPath * initLaserPath(int fromRow, int fromCol, Cell **grid, Direction laserDir) {
@@ -176,7 +179,6 @@ Direction getOppositeDir(Direction dir) {
     return nowhere;
 }
 
-//bug go thrugh laser cannon
 bool canBeNext(Cell * cell, Direction from) {
 
     return cell->block_id != -1 && from != getOppositeDir(cell->laserTouchedItDir);

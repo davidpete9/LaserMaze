@@ -1,23 +1,37 @@
 [{
-		"currentLevel":	2
+		"level":	1,
+		"elapsedTime":	3
 	}, {
-		"currentLevel":	2
+		"level":	2,
+		"elapsedTime":	1
 	}, {
-		"currentLevel":	2
+		"level":	3,
+		"elapsedTime":	2
 	}, {
-		"currentLevel":	4
+		"level":	4,
+		"elapsedTime":	1
 	}, {
-		"currentLevel":	4
+		"level":	5,
+		"elapsedTime":	2
 	}, {
-		"currentLevel":	12
+		"level":	6,
+		"elapsedTime":	1
 	}, {
-		"currentLevel":	12
+		"level":	7,
+		"elapsedTime":	6
 	}, {
-		"currentLevel":	1
+		"level":	8,
+		"elapsedTime":	3
 	}, {
-		"currentLevel":	12
+		"level":	9,
+		"elapsedTime":	3
 	}, {
-		"currentLevel":	12
+		"level":	10,
+		"elapsedTime":	1
 	}, {
-		"currentLevel":	4
+		"level":	11,
+		"elapsedTime":	2
+	}, {
+		"level":	12,
+		"elapsedTime":	5
 	}]

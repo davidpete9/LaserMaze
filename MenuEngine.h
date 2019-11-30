@@ -22,6 +22,8 @@ typedef struct ButtonRect {
 
 } ButtonRect;
 
+void drawBackground(SDL_Renderer *renderer);
+
 /**
 * Létrehoz egy Button típusú struktúrát, alapértelmezetten beállítja a gomb színét, betűméretét, és a szöveget pozicionálja a gombon belül.
 * @param SDL_Rect pos
