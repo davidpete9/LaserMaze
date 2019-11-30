@@ -7,6 +7,11 @@
 #define MAPS_IN_A_LEVEL 5
 
 extern const char *IS_GAME_INITIALIZED;
+extern const char *USED_SKIP_BUTTON;
+extern const char *SELECTED_MAP_INDEXES_ARR;
+extern const char *FINISHED_MAPS_ARR;
+extern const char *LEVELS_FILE_NAME;
+
 extern const char *LEVEL_STR;
 extern const char *MAP_ID;
 extern const char *MAP_BLOCKS_ARRAY;
@@ -21,6 +26,7 @@ extern const char * MAPS_FILENAME_FORMAT;
 extern const char * BLOCKS_TEXTURE_FILENAME_FORMAT;
 extern const SDL_Rect TABLE_RECT;
 extern const SDL_Rect RIGHT_SIDE_RECT;
+extern const SDL_Rect FULL_GAME_TABLE_RECT;
 
 enum {
     BRICK = 1,

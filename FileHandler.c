@@ -16,7 +16,7 @@
  * @param const char *filename
  * @return FILE *fp
  */
-FILE *createNewFile(const char *filename) {
+FILE *OpenOrCreateFile(const char *filename) {
 
     FILE *fp;
     fp = fopen(filename, "wt");
@@ -32,7 +32,8 @@ FILE *createNewFile(const char *filename) {
  * @param cJSON * structure
  * @param FILE * fp
  * */
-void printStructureIntoFileAndClose(FILE *fp, cJSON * structure) {
+void printStructureIntoFileAndClose(const char *filename, cJSON * structure) {
+    FILE *fp = OpenOrCreateFile(filename);
     fprintf(fp, cJSON_Print(structure));
     fclose(fp);
 }

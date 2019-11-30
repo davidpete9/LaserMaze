@@ -49,7 +49,7 @@ Direction getWindowDirection(Direction from, int rotation) {
 Direction findDirection(Direction from, int block_type, int rotation) {
     switch (block_type) {
         case LASER_CANNON:
-            return getLaserCannonDirection(rotation);
+            return nowhere;
         case ONE_SIDED_WINDOW:
             return getWindowDirection(from, (rotation+3)%4);
         case TWO_SIDED_WINDOW:

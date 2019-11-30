@@ -27,8 +27,11 @@ SDL_Texture *getBlockTexture(SDL_Renderer *renderer, int blockId) {
 }
 
 void drawMoveing(SDL_Renderer *renderer, Cell * cell, int x, int y) {
-    SDL_Rect to = (SDL_Rect) {x-floor(SQUARE_W/2.0), y-floor(SQUARE_W/2.0), SQUARE_W, SQUARE_W};
-    drawBlock(renderer, cell, &to);
+    if (isClickedOnBtn(&FULL_GAME_TABLE_RECT,x,y)) {
+        SDL_Rect to = (SDL_Rect) {x-floor(SQUARE_W/2.0), y-floor(SQUARE_W/2.0), SQUARE_W, SQUARE_W};
+
+        drawBlock(renderer, cell, &to);
+    }
 }
 
 SDL_Rect getActualCoordsOnGrid(bool isLeftSide, int x, int y) {
@@ -85,7 +88,7 @@ void drawGrid(SDL_Renderer *renderer) {
 
 void drawFullMap(SDL_Renderer *renderer, Cell **grid, ButtonRect **buttons) {
     SDL_SetRenderDrawColor(renderer,0,0,0,255);
-    SDL_RenderClear(renderer);
+    SDL_RenderFillRect(renderer, &FULL_GAME_TABLE_RECT);
     drawAllCurrentButtons(renderer, buttons, inGame);
     drawGameTable(renderer);
     drawCurrentGrid(renderer, grid, buttons);
@@ -138,8 +141,9 @@ GameEvent handlButtonsClicks(int btnId) {
     return leave;
 }
 
-LaserPath * initLaserPath(int fromRow, int fromCol, Cell **grid) {
+LaserPath * initLaserPath(int fromRow, int fromCol, Cell **grid, Direction laserDir) {
     grid[fromRow][fromCol].hasLaserTouchedIt = true;
+    grid[fromRow][fromCol].laserTouchedItDir = laserDir;
     LaserPath * line = (LaserPath *) malloc(sizeof(LaserPath));
     line->startRow = fromRow;
     line->startCol = fromCol;
@@ -153,39 +157,13 @@ LaserPath * createRoot(Cell **grid) {
     for (int i = 0; i < GRID_W; i++) {
         for (int j = 0;j < GRID_W; j++) {
             if (grid[i][j].block_id == LASER_CANNON) {
-                 LaserPath * root = initLaserPath(i,j, grid);
-                 root->dir = findDirection(-1, LASER_CANNON, grid[i][j].rotation);
+                 LaserPath * root = initLaserPath(i,j, grid, nowhere);
+                 root->dir = getLaserCannonDirection(grid[i][j].rotation);
                  return root;
             }
         }
     }
     return NULL;
-}
-
-//bug go thrugh laser cannon
-bool canBeNext(Cell * cell) {
-    return cell->block_id != -1 && !cell->hasLaserTouchedIt;
-}
-
-int getTheNextTouchedBlockRowOrCol(LaserPath * line, Cell **grid) {
-    int row = line->startRow;
-    int col = line->startCol;
-    switch (line->dir) {
-    case west:
-        while( col-1 >= 0 && !canBeNext(&grid[row][col-1])) col--;
-        return col-1;
-    case south:
-        while(row+1 < GRID_W && !canBeNext(&grid[row+1][col])) row++;
-        return row+1;
-    case north:
-        while(row-1 >= 0 && !canBeNext(&grid[row-1][col])) row--;
-        return row-1;
-    case east:
-        while(col+1 < GRID_W && !canBeNext(&grid[row][col+1])) col++;
-        return col+1;
-    default:
-        return 0;
-    }
 }
 
 Direction getOppositeDir(Direction dir) {
@@ -197,6 +175,35 @@ Direction getOppositeDir(Direction dir) {
     }
     return nowhere;
 }
+
+//bug go thrugh laser cannon
+bool canBeNext(Cell * cell, Direction from) {
+
+    return cell->block_id != -1 && from != getOppositeDir(cell->laserTouchedItDir);
+}
+
+int getTheNextTouchedBlockRowOrCol(LaserPath * line, Cell **grid) {
+    int row = line->startRow;
+    int col = line->startCol;
+    switch (line->dir) {
+    case west:
+        while( col-1 >= 0 && !canBeNext(&grid[row][col-1], line->dir)) col--;
+        return col-1;
+    case south:
+        while(row+1 < GRID_W && !canBeNext(&grid[row+1][col], line->dir)) row++;
+        return row+1;
+    case north:
+        while(row-1 >= 0 && !canBeNext(&grid[row-1][col], line->dir)) row--;
+        return row-1;
+    case east:
+        while(col+1 < GRID_W && !canBeNext(&grid[row][col+1], line->dir)) col++;
+        return col+1;
+    default:
+        return 0;
+    }
+}
+
+
 
 /**
 Építési folyamat:
@@ -220,10 +227,10 @@ void *createLaserPathTree(Cell ** grid, LaserPath ** root) {
 
     //todo: szepites, itt kicsit katyvaszos
     if (r->dir == west || r->dir == east) {
-        r->next = initLaserPath(r->startRow, coord, grid);
+        r->next = initLaserPath(r->startRow, coord, grid, getOppositeDir(r->dir));
     }
     else {
-        r->next = initLaserPath(coord, r->startCol, grid);
+        r->next = initLaserPath(coord, r->startCol, grid, getOppositeDir(r->dir));
     }
 
     if (hitEnd) {
@@ -242,7 +249,7 @@ void *createLaserPathTree(Cell ** grid, LaserPath ** root) {
 
 
     if (grid[r->next->startRow][r->next->startCol].block_id == DOUBLE_REFLECTION_WINDOW) {
-         r->next2 = initLaserPath(r->next->startRow, r->next->startCol, grid);
+         r->next2 = initLaserPath(r->next->startRow, r->next->startCol, grid, getOppositeDir(r->dir));
          //mivel innent egyenesen novabb megy, nem valtozik az irany ebben a szogben.
          r->next2->dir = r->dir;
          createLaserPathTree(grid, &(r->next2));
@@ -261,7 +268,7 @@ printTree(root->next);
 printTree(root->next2);
 }
 
-
+//todo ..
 void drawLaser(SDL_Renderer * renderer, LaserPath *r) {
     if (r == NULL || r->dir == nowhere) return;
     int fromX = r->startCol;
@@ -296,8 +303,6 @@ void drawLaser(SDL_Renderer * renderer, LaserPath *r) {
 
     drawLaser(renderer, r->next);
     drawLaser(renderer, r->next2);
-
-    //Itherative solution
 
 }
 

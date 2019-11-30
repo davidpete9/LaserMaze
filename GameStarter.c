@@ -63,6 +63,7 @@ void initCell(bool isLeft, int block_id, int rotation, Cell *cell) {
     cell->isRotatable = !isLeft;
     cell->isLeftSide = isLeft;
     cell->hasLaserTouchedIt = false;
+    cell->laserTouchedItDir = nowhere;
     cell->display = true;
 }
 
@@ -132,7 +133,7 @@ int * selectRandomIndexes(int length, int * array_length) {
     if (length <= 0) return NULL;
     srand(time(0));
 
-    *array_length = length >= MAPS_IN_A_LEVEL ? MAPS_FILENAME_FORMAT : length;
+    *array_length = length >= MAPS_IN_A_LEVEL ? MAPS_IN_A_LEVEL : length;
 
     int * random_indexes = (int * ) malloc((*array_length)*sizeof(int));
     for (int i = 0; i < *array_length; i++) random_indexes[i] = -1;
@@ -156,34 +157,16 @@ cJSON *getMapsForLevel(int level) {
     return allMap;
 }
 
-//tofo wtf...
-/**
- * @param cJSON *structure
- * @param bool val
- * */
-void setGameInitalizationStatus(cJSON *structure, bool val) {
-    cJSON_AddItemToObject(structure, IS_GAME_INITIALIZED, cJSON_CreateNumber(val ? 1 : 0));
-}
-
-/**
- * @param cJSON *structure
- * @param int level
- * */
-void setLevel(cJSON *structure, int level) {
-    cJSON_AddItemToObject(structure, LEVEL_STR, cJSON_CreateNumber((int) level));
-}
-
 /** Az actual.json fájlt létrehozza, és elmenti benne az aktuális levelt.
  * @param int level
  * */
 void initializeFileWithLevel(int level) {
-    FILE *fp = createNewFile(ACTUAL_STATUS_FILE_NAME);
+
     cJSON *structure = cJSON_CreateObject();
+    cJSON_AddItemToObject(structure, IS_GAME_INITIALIZED, cJSON_CreateNumber(0));
+    cJSON_AddItemToObject(structure, LEVEL_STR, cJSON_CreateNumber((int) level));
 
-    setGameInitalizationStatus(structure, false);
-    setLevel(structure, level);
-
-    printStructureIntoFileAndClose(fp, structure);
+    printStructureIntoFileAndClose(ACTUAL_STATUS_FILE_NAME, structure);
 }
 
 bool checkSolution(LaserPath * root, Cell ** grid) {
@@ -197,10 +180,19 @@ bool checkSolution(LaserPath * root, Cell ** grid) {
     return true;
 }
 
+bool isAnyGameInitialized() {
+    cJSON *currentData = getParsedJSONContentOfFile(ACTUAL_STATUS_FILE_NAME);
+    printItForDebugging(currentData);
+    if (currentData == NULL) return false;
+    bool status = cJSON_GetObjectItem(currentData, IS_GAME_INITIALIZED)->valueint == 1;
+    return status;
+}
+
 void resetGridAfterShot(Cell **grid) {
     for (int i = 0; i < GRID_W; i++) {
         for (int j = 0; j < GRID_W; j++) {
             grid[i][j].hasLaserTouchedIt = false;
+            grid[i][j].laserTouchedItDir = nowhere;
         }
     }
 }
@@ -212,10 +204,159 @@ void freeTree(LaserPath *r) {
     free(r);
 }
 
-void loadNextMap(cJSON * maps, int ind, Cell ***grid, cJSON **actualMap) {
+void freeGrid(Cell **grid) {
+    free(grid[0]);
+    free(grid);
+}
+void selectAndLoadNextMap(cJSON * maps, int mapInd, Cell ***grid, cJSON **actualMap) {
     if (maps == NULL) return;
-    *actualMap = cJSON_GetArrayItem(maps, ind);
+    if (*grid != NULL) freeGrid(*grid);
+    *actualMap = cJSON_GetArrayItem(maps, mapInd);
     *grid = initGridStructure(*actualMap);
+    }
+
+void writeGameCounterToDisplay(SDL_Renderer *renderer, int level, int mapInd, int size, int mapId) {
+    char stringToShow[50];
+    int len = sprintf(stringToShow,"Szint: %d, Pálya: %d/%d, Pálya id: %d", level, mapInd, size, mapId);
+    stringToShow[len] = '\0';
+    StringToDisplay msg;
+    msg.fontSize = 16;
+    msg.pos = (SDL_Rect) {550,5,300,50};
+    msg.title = stringToShow;
+    msg.titleColor = (SDL_Color) {255,255,255,255};
+
+    SDL_SetRenderDrawColor(renderer, 0,0,0,255);
+    SDL_RenderFillRect(renderer, &msg.pos);
+
+    writeTextToDisplay(renderer, &msg);
+    SDL_RenderPresent(renderer);
+
+}
+
+void writeMessageToTop(SDL_Renderer *renderer, char * text, bool isSuccess) {
+    StringToDisplay msg;
+    msg.fontSize = 20;
+    msg.pos = (SDL_Rect){100,0,400,50};
+    msg.title = text;
+    msg.titleColor = isSuccess ? (SDL_Color) {0,255,0,255} : (SDL_Color) {255,0,0,255};
+
+    SDL_SetRenderDrawColor(renderer, 0,0,0,255);
+    SDL_RenderFillRect(renderer, &msg.pos);
+
+    writeTextToDisplay(renderer,&msg);
+    SDL_RenderPresent(renderer);
+}
+
+void setSelectedNumbers(cJSON * data, int * selectedMapIndexes, int size) {
+      cJSON * arr = cJSON_AddArrayToObject(data, SELECTED_MAP_INDEXES_ARR);
+    for (int i = 0; i < size;i++) {
+            cJSON_AddItemToArray(arr, cJSON_CreateNumber(selectedMapIndexes[i]));
+    }
+}
+
+void saveResultToFile(int level) {
+cJSON * current = getParsedJSONContentOfFile(LEVELS_FILE_NAME);
+if (current == NULL) {
+    current = cJSON_CreateArray();
+}
+cJSON * result = cJSON_CreateObject();
+cJSON_AddNumberToObject(result, LEVEL_STR, level);
+
+cJSON_AddItemToArray(current, result);
+
+printStructureIntoFileAndClose(LEVELS_FILE_NAME, current);
+
+}
+
+int * getArrayFromObject(cJSON * obj, char * key, int * size) {
+        cJSON * jsonArr = cJSON_GetObjectItem(obj, key);
+        *size = cJSON_GetArraySize(jsonArr);
+        int * arr = (int *) malloc(sizeof(int)*(*size));
+        for (int i = 0; i < size; i++) {
+            arr[i] = cJSON_GetArrayItem(jsonArr, i);
+        }
+        return arr;
+}
+
+
+
+void runGame(SDL_Renderer * renderer,  cJSON * currentData) {
+        ButtonRect **buttons = createButtonsForCurrentPage(inGame);
+
+        int level = cJSON_GetObjectItem(currentData, LEVEL_STR);
+        cJSON *maps = getMapsForLevel(level);
+
+        int sizeOfMaps;
+
+        int * selectedMapIndexes = getArrayFromObject(currentData, SELECTED_MAP_INDEXES_ARR, &sizeOfMaps);
+
+        int * finishedMaps = cJSON_GetObjectItem(currentData, FINISHED_MAPS_ARR);
+        int mapIndex = cJSON_GetArraySize(finishedMaps);
+
+        bool canUseSkipButton = cJSON_GetObjectItem(currentData, USED_SKIP_BUTTON)->valueint == 1 ? false : true;
+
+        cJSON *actualMap = NULL;
+        Cell **grid = NULL;
+        LaserPath * path;
+
+        selectAndLoadNextMap(actualMap, mapIndex++, grid, actualMap);
+
+        GameEvent next = restart;
+        while (next != leave) {
+
+            switch (next) {
+                case reset:
+                    freeGrid(grid);
+                    grid = initGridStructure(actualMap);
+                    next = restart;
+                    break;
+                case fire:
+                    path = runLaser(renderer, grid);
+                    if (checkSolution(path, grid)) {
+                            writeMessageToTop(renderer, "Helyes megoldás. Következő pálya betöltése...", true);
+
+                            if (mapIndex <= sizeOfMaps) {
+                                    cJSON_AddItemToArray(finishedMaps, cJSON_CreateNumber(selectedMapIndexes[mapIndex-1]));
+                                    selectAndLoadNextMap(maps, selectedMapIndexes[mapIndex++], &grid, &actualMap);
+                            }
+                            next = mapIndex <= sizeOfMaps ? restart : finished;
+                    }
+                    else {
+                        writeMessageToTop(renderer, "Hibás megoldás", false);
+                        resetGridAfterShot(grid);
+                        next = restart;
+                    }
+                    freeTree(path);
+                    Sleep(2500);
+                    break;
+                case skip:
+                    if (canUseSkipButton) {
+                        writeMessageToTop(renderer, "Pálya kihagyva, új pálya betöltése..", true);
+                        if (mapIndex <= sizeOfMaps) selectAndLoadNextMap(maps, selectedMapIndexes[mapIndex++], &grid, &actualMap);
+                        next = mapIndex <= sizeOfMaps ? restart: finished;
+                        cJSON_AddNumberToObject(currentData, USED_SKIP_BUTTON, 1);
+                        canUseSkipButton = false;
+                        Sleep(1000);
+                    }
+                    else {
+                        next = restart;
+                    }
+                    break;
+                case restart:
+                    writeGameCounterToDisplay(renderer, level, mapIndex, sizeOfMaps, cJSON_GetObjectItem(actualMap, MAP_ID)->valueint);
+                    writeMessageToTop(renderer,"",true);
+                    next = runGameEvents(renderer, grid, buttons);
+                    break;
+                case finished:
+                    saveResultToFile(level);
+                    writeMessageToTop(renderer, "Szint teljesítve. Vissza a főmenübe...", true);
+                    Sleep(1500);
+                    next = leave;
+                    break;
+                default: //TEMP
+                    next = leave;
+            }
+        }
 }
 
 /** Elindítja a játékot, úgy hogy előszőr betölti a szintet az actual.json fájlból, majd kiválasztaja az aktuális
@@ -228,124 +369,100 @@ Page startGame(SDL_Renderer *renderer) {
     cJSON *currentData = getParsedJSONContentOfFile(ACTUAL_STATUS_FILE_NAME);
     if (currentData == NULL) return -1;
 
-    bool isGameInitialized = cJSON_GetObjectItem(currentData, IS_GAME_INITIALIZED)->valueint ? true : false;
+    int isGameInitialized = cJSON_GetObjectItem(currentData, IS_GAME_INITIALIZED)->valueint;
     int level = cJSON_GetObjectItem(currentData, LEVEL_STR)->valueint;
-
-    if (!isGameInitialized) {
-
+    if (isGameInitialized == 0) {
+        cJSON_DeleteItemFromObject(currentData, IS_GAME_INITIALIZED);
+        cJSON_AddNumberToObject(currentData, IS_GAME_INITIALIZED, 1);
         ButtonRect **buttons = createButtonsForCurrentPage(inGame);
 
         cJSON *maps = getMapsForLevel(level);
         if (maps == NULL) {
-            printf("NINCSENEK MAPOK, terminate.");
-            StringToDisplay s2;
-            s2.fontSize = 20;
-            s2.pos = (SDL_Rect){100,0,300,50};
-            SDL_SetRenderDrawColor(renderer, 0,0,0,255);
-            SDL_RenderFillRect(renderer, &s2.pos);
-
-            s2.title = "NINCSENEK EHHEZ A SZINTHEZ MAPOK MÉG.";
-            s2.titleColor = (SDL_Color) {0, 255, 0, 255};
-
-            writeTextToDisplay(renderer, &s2);
-            SDL_RenderPresent(renderer);
-            Sleep(3000);
+            writeMessageToTop(renderer, "Nem sikerült a pálya betöltése. Visszairányítás...", false);
+            Sleep(2000);
             return gameMenu;
         }
 
-        int selected_maps_num;
-        int * selectedMapIndexes = selectRandomIndexes(cJSON_GetArraySize(maps),&selected_maps_num);
-        printf("\n$$$$ RANDOM SZAMOK (beetween 0 and %d)$$$$$\n", cJSON_GetArraySize(maps));
-        for (int i = 0; i < selected_maps_num; i++) {
-            printf("%d ", selectedMapIndexes[i]);
-        }
+        bool canUseSkipButton = true;
+        int size;
+        int * selectedMapIndexes = selectRandomIndexes(cJSON_GetArraySize(maps),&size);
+        setSelectedNumbers(currentData, selectedMapIndexes, size);
 
-        int map_index = 0;
-        StringToDisplay s2;
-        cJSON *actualMap;
-        Cell **grid;
-        loadNextMap(maps, selectedMapIndexes[map_index++], &grid, &actualMap);
+        cJSON * finishedArr = cJSON_AddArrayToObject(currentData, FINISHED_MAPS_ARR);
+
+        int mapIndex = 0;
+
+        cJSON *actualMap = NULL;
+        Cell **grid = NULL;
+
+        selectAndLoadNextMap(maps, selectedMapIndexes[mapIndex++], &grid, &actualMap);
 
         LaserPath * path;
-        GameEvent next = runGameEvents(renderer, grid, buttons);
+        GameEvent next = restart;
+
         while (next != leave) {
 
             switch (next) {
                 case reset:
-                    free(grid[0]);
-                    free(grid);
+                    freeGrid(grid);
                     grid = initGridStructure(actualMap);
-                    next = runGameEvents(renderer, grid, buttons);;
+                    next = restart;
                     break;
                 case fire:
                     path = runLaser(renderer, grid);
-                    StringToDisplay status;
-                    status.fontSize = 20;
-                    status.pos = (SDL_Rect){100,0,300,50};
-
                     if (checkSolution(path, grid)) {
-                        free(grid[0]);
-                        free(grid);
-                        status.title = "Helyes! Pálya teljesítve.";
-                        status.titleColor = (SDL_Color) {0, 255, 0, 255};
-                        loadNextMap(maps, selectedMapIndexes[map_index++], &grid, &actualMap);
+                            writeMessageToTop(renderer, "Helyes megoldás. Következő pálya betöltése...", true);
 
+                            if (mapIndex <= size) {
+                                    cJSON_AddItemToArray(finishedArr, cJSON_CreateNumber(selectedMapIndexes[mapIndex-1]));
+                                    selectAndLoadNextMap(maps, selectedMapIndexes[mapIndex++], &grid, &actualMap);
+                            }
+                            next = mapIndex <= size ? restart : finished;
                     }
                     else {
-                        status.title = "Rossz megoldás!";
-                        status.titleColor = (SDL_Color) {255, 0, 0, 255};
+                        writeMessageToTop(renderer, "Hibás megoldás", false);
+                        resetGridAfterShot(grid);
+                        next = restart;
                     }
-                        writeTextToDisplay(renderer, &status);
-                        SDL_RenderPresent(renderer);
-
-                    Sleep(2500);
+                    printTree(path);
                     freeTree(path);
-
-                    if (map_index > selected_maps_num) {
-                            next = finished;
-                            continue;
-                    }
-
-                    resetGridAfterShot(grid);
-                    next = runGameEvents(renderer, grid, buttons);
+                    Sleep(2500);
                     break;
                 case skip:
-                    free(grid[0]);
-                    free(grid);
-
-                    loadNextMap(maps, selectedMapIndexes[map_index++], &grid, &actualMap);
-                    if (map_index > selected_maps_num) {
-                            next = finished;
-                            continue;
-                        }
+                    if (canUseSkipButton || 1 == 1) {
+                        writeMessageToTop(renderer, "Pálya kihagyva, új pálya betöltése..", true);
+                        if (mapIndex <= size) selectAndLoadNextMap(maps, selectedMapIndexes[mapIndex++], &grid, &actualMap);
+                        next = mapIndex <= size ? restart: finished;
+                        cJSON_AddNumberToObject(currentData, USED_SKIP_BUTTON, 1);
+                        canUseSkipButton = false;
+                        Sleep(1000);
+                    }
+                    else {
+                        next = restart;
+                    }
+                    break;
+                case restart:
+                    writeGameCounterToDisplay(renderer, level, mapIndex, size, cJSON_GetObjectItem(actualMap, MAP_ID)->valueint);
+                    writeMessageToTop(renderer,"",true);
                     next = runGameEvents(renderer, grid, buttons);
                     break;
                 case finished:
-                    printf("FINISHED");
-                    s2.fontSize = 20;
-                    s2.pos = (SDL_Rect){100,0,300,50};
-                    SDL_SetRenderDrawColor(renderer, 0,0,0,255);
-                    SDL_RenderFillRect(renderer, &s2.pos);
-
-                    s2.title = "Szint sikeresen végigcsinálva. Vissza a főmenübe...";
-                    s2.titleColor = (SDL_Color) {0, 255, 0, 255};
-
-                    writeTextToDisplay(renderer, &s2);
-                    SDL_RenderPresent(renderer);
-                    Sleep(3000);
-
+                    saveResultToFile(level);
+                    writeMessageToTop(renderer, "Szint teljesítve. Vissza a főmenübe...", true);
+                    Sleep(1500);
                     next = leave;
                     break;
                 default: //TEMP
                     next = leave;
             }
         }
+        if (canUseSkipButton) cJSON_AddNumberToObject(currentData, USED_SKIP_BUTTON, 0);
+
+        printStructureIntoFileAndClose(ACTUAL_STATUS_FILE_NAME, currentData);
         free(selectedMapIndexes);
-        free(grid[0]);
-        free(grid);
+        freeGrid(grid);
         resetScreenAndFreeButtonsArray(renderer, buttons, inGame);
         cJSON_Delete(currentData);
-        //TEMP
         cJSON_Delete(maps);
         return gameMenu;
     } else {

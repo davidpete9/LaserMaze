@@ -30,10 +30,6 @@ enum {
 Page clickedOnLevel(int btnId) {
     if (btnId <= 0 || btnId > LEVEL_NUM) return mainMenu;
 
-    //IDEIGLENESEN, MERT A FELKESZ ALLAPOTBAN NINCSEN KÉSZ AZ ÖSSZZES PÁLYA, ÉS HOGY LEHESSEN TESZTELNI
-    //TEHÁT MIVEL AZ ELSŐ PÁLYA PÁR EL VAN KÉSZíTVE:
-    //btnId = 1;
-
     initializeFileWithLevel(btnId);
 
     return inGame;
