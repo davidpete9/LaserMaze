@@ -108,7 +108,7 @@ void drawGrid(SDL_Renderer *renderer) {
                            RIGHT_SIDE_RECT.x + RIGHT_SIDE_RECT.w, RIGHT_SIDE_RECT.y + (i * SQUARE_W));
     }
 }
-//todo
+
 /** Újrarajzolja a teljes térképet.
  * @param SDL_Renderer * renderer,
  * @parma Cell **grid
@@ -193,6 +193,17 @@ GameEvent handlButtonsClicks(int btnId) {
     }
 }
 
+/**
+ * Felszabadítja rekrúzív módszerrel a a lézerfény útját tartalmazó bináris fát.
+ * @param LaserPath
+ * */
+void freeTree(LaserPath *r) {
+    if (r == NULL) return;
+    freeTree(r->next);
+    freeTree(r->next2);
+    free(r);
+}
+
 /** Létrehoz egy LaserPath struktúrát a kapott adatok alapján.
  * @param int fromRow
  * @param int fromCol
@@ -255,7 +266,11 @@ bool canBeNext(Cell *cell, Direction from) {
     return cell->block_id != -1 && from != getOppositeDir(cell->laserTouchedItDir);
 }
 
-//todo fura
+/** Megmondja, hogy hol van aza blokk, amit a lézerfény a legközelebb érinteni fog.
+ * @param LaserPath *line
+ * @param Cell ** grid
+ * @return int next
+ * */
 int getTheNextTouchedBlockRowOrCol(LaserPath *line, Cell **grid) {
     int row = line->startRow;
     int col = line->startCol;
@@ -278,20 +293,17 @@ int getTheNextTouchedBlockRowOrCol(LaserPath *line, Cell **grid) {
 }
 
 
-//todo fura
 /**
-Építési folyamat:
-Megvan: az aktuális root koordinátái
-az aktuális rootból kiinduló vonal iránya
-
-Cél: toKoordináták beállítása + next nek a from, és a dir
+* A lezerfény útját kirajzoló bináris fát építi meg, az alapján hogy melyik blokkból milyen irányba indul a lézerfény.
+* @param Cell **grid
+* LaserPath **root
 */
 void *createLaserPathTree(Cell **grid, LaserPath **root) {
 
     LaserPath *r = *root;
     if (r->dir == nowhere) return;
 
-    //temp
+
     int coord = getTheNextTouchedBlockRowOrCol(r, grid);
     bool hitEnd = false;
     if (coord == -1 || coord == GRID_W) hitEnd = true;
@@ -299,7 +311,6 @@ void *createLaserPathTree(Cell **grid, LaserPath **root) {
     if (coord == GRID_W) coord = GRID_W - 1;
 
 
-    //todo: szepites, itt kicsit katyvaszos
     if (r->dir == west || r->dir == east) {
         r->next = initLaserPath(r->startRow, coord, grid, getOppositeDir(r->dir));
     } else {
@@ -329,21 +340,10 @@ void *createLaserPathTree(Cell **grid, LaserPath **root) {
 
 }
 
-
-void printTree(LaserPath *root) {
-    if (root == NULL) {
-        return;
-    }
-
-    printf("\n{from: [%d, %d] dir: %s}\n", root->startRow, root->startCol,
-           root->dir == west ? "west" : root->dir == east ? "east" : root->dir == north ? "north" : root->dir == nowhere
-                                                                                                    ? "sehova"
-                                                                                                    : "south");
-    printTree(root->next);
-    printTree(root->next2);
-}
-
-//todo atir..
+/** Kirajzolja a lézerfény útját.
+ * @param SDL_Renderer * renderer
+ * @param LaserPath * root
+ * */
 void drawLaser(SDL_Renderer *renderer, LaserPath *r) {
     if (r == NULL || r->dir == nowhere) return;
     int fromX = r->startCol;
@@ -392,7 +392,6 @@ LaserPath *runLaser(SDL_Renderer *renderer, Cell **grid) {
     LaserPath *root = createRoot(grid);
     if (!root) return NULL;
     createLaserPathTree(grid, &root);
-    printTree(root);
     drawLaser(renderer, root);
     SDL_RenderPresent(renderer);
     return root;

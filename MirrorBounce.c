@@ -1,6 +1,10 @@
 #include "GameStarter.h"
 #include "Constanses.h"
 
+/**
+* @param int rotation
+* @return Direction dir
+*/
 Direction getLaserCannonDirection(int rotation) {
     switch (rotation) {
         case 0:
@@ -16,6 +20,10 @@ Direction getLaserCannonDirection(int rotation) {
     }
 }
 
+/** A kétoldalú tükörről való visszapattanásokata kezeli.
+* @param Direction from,
+* @param int rotation
+*/
 Direction getTwoSidedMirrorDirection(Direction from, int rotation) {
     //ebben esetben eleg csak 2 allapotot kulonboztetunk meg.
     rotation %= 2;
@@ -27,6 +35,11 @@ Direction getTwoSidedMirrorDirection(Direction from, int rotation) {
     return from == east ? north : east;
 }
 
+/**
+* Az egyoldalú tükörről való visszapattanásokat kezeli, a kétoldalú függvénynek a segítségével
+* @param Direction from
+* @param int rotation
+*/
 Direction getMirrorDirection(Direction from, int rotation) {
         switch(rotation) {
             case 0:
@@ -46,7 +59,15 @@ Direction getMirrorDirection(Direction from, int rotation) {
     }
 }
 
+
+/** Megmondja, hogy egy adott irányból egy adott típusú blokkról milyen irányba pattan le a lézersugár.
+*@param Direction from
+*@param int block_type
+*@param int rotation
+*@return Direcion next
+*/
 Direction findDirection(Direction from, int block_type, int rotation) {
+    //mivel a blokkok rajzai különbözően elforgatva vannak eltérolva, azért hozzá kellett igazítani a rotationet.
     switch (block_type) {
         case LASER_CANNON:
             return nowhere;
@@ -57,11 +78,8 @@ Direction findDirection(Direction from, int block_type, int rotation) {
         case BRICK:
             return nowhere;
         case GOAL_BLOCK:
-               //Mivel a rajzon alapbol kettovel oebb van fotrgatva mint a tükör,
-               //és hogy lehessen rajta használni az előző függvényeket. Felfogható egy egyoldalú tükörnek.
                return getMirrorDirection(from, (rotation+3)%4);
         case DOUBLE_REFLECTION_MIRROR:
-            //Mivel a rajzon egyel odebb van. A masik reflexiot nem ez a fuggveny fogja kezelni.
             return getTwoSidedMirrorDirection(from, rotation);
         default:
             return nowhere;

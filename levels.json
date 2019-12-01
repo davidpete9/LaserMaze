@@ -3,4 +3,14 @@
 		"elapsedTime":	72,
 		"hasNoSkipButtonBadge":	0,
 		"hasTimeBonus":	0
+	}, {
+		"level":	2,
+		"hasTimeBonus":	0,
+		"hasNoSkipButtonBadge":	1,
+		"elapsedTime":	18
+	}, {
+		"level":	3,
+		"elapsedTime":	3,
+		"hasNoSkipButtonBadge":	0,
+		"hasTimeBonus":	0
 	}]

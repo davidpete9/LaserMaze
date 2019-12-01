@@ -40,6 +40,8 @@ int getCurrentLevel() {
     return max + 1;
 }
 
+/**TODO
+ * */
 cJSON *getResultsForCurrentLevel(int level) {
     cJSON *allResults = getParsedJSONContentOfFile(LEVELS_FILE_NAME);
     if (allResults == NULL) return NULL;

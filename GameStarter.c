@@ -215,17 +215,6 @@ void resetGridAfterShot(Cell **grid) {
         }
     }
 }
-//todo áthleyezni?
-/**
- * Felszabadítja rekrúzív módszerrel a a lézerfény útját tartalmazó bináris fát.
- * @param LaserPath
- * */
-void freeTree(LaserPath *r) {
-    if (r == NULL) return;
-    freeTree(r->next);
-    freeTree(r->next2);
-    free(r);
-}
 
 /** Felszabadítja a táblázatot.
  * @param Cell **grid
@@ -249,6 +238,14 @@ void selectAndLoadNextMap(cJSON *maps, int mapInd, Cell ***grid, cJSON **actualM
     *grid = initGridStructure(*actualMap);
 }
 
+/** Visszaatér annak a struktúrának a tartalmával, a játékstátuszt leító szöveget tartalmazza.
+* @param SDL_Renderer *renderer
+* @param int level
+* @param int mapInd
+* @param int size
+* @param int mapId
+* @return StringToDisplay * stringToShow
+*/
 StringToDisplay * getGameCounterObj(SDL_Renderer *renderer, int level, int mapInd, int size, int mapId) {
     char  * stringToShow = (char *) malloc(50*sizeof(char));
     int len = sprintf(stringToShow, "Szint: %d, Pálya: %d/%d, Pálya id: %d", level, mapInd, size, mapId);
@@ -403,11 +400,14 @@ void setSelectedNumbers(cJSON *currentData, int *selectedMapIndexes, int size) {
     }
 }
 
-/** A játék futtatását kezeli.
- * todo
+/** A játék futtatását kezeli. Az alapján tér vissza egy logikai értékkel, hogy a játékos teljesítette e pályát vagy sem.
+ Előszőr az actual.json fájlból betölti a játékállapotot, és a GameBoardEvents.c fájl függvényei segítségével kirajzolja a
+ pályát. A runGameEvents() függvény visszatérési értéke alapján dolgozik, ami a GameEvent enum értéke. Addig fut egy a program,
+ amíg a játékos be nem fejezte a pályát, vagy ki nem lépett. Az utóbbi esetben az aktuális játékállapotot elmenti a program az actual.json fájlba.
  * @param SDL_Renderer * renderer
  * @param cJSON *currentData
- * @pararm cJSON *maps
+ * @param cJSON *maps
+ * @return bool isGameFinished
  * */
 bool runGame(SDL_Renderer *renderer, cJSON *currentData, cJSON *maps) {
     int sizeOfMaps;
@@ -471,7 +471,7 @@ bool runGame(SDL_Renderer *renderer, cJSON *currentData, cJSON *maps) {
                     cJSON_DeleteItemFromObject(currentData, USED_SKIP_BUTTON);
                     cJSON_AddNumberToObject(currentData, USED_SKIP_BUTTON, 1);
                     canUseSkipButton = false;
-                    //Sleep(1000);
+                    Sleep(1000);
                 } else {
                     next = restart;
                 }
@@ -513,12 +513,13 @@ bool runGame(SDL_Renderer *renderer, cJSON *currentData, cJSON *maps) {
     }
     return isGameFinished;
 }
-//todo?? másik talán
-/** Elindítja a játékot, úgy hogy előszőr betölti a szintet az actual.json fájlból, majd kiválasztaja az aktuális
- * pálylákat, és kirajzolja az elsőt. Amennyiben a játék sikeresen elindult, a pálya kirajzolódott true-val tér vissza, különben valamilyen
- * hiba esetén false-sal.
+
+/** Akkor fut le, mikor az inGame Pagenek kell betöltődnie. Ha az adott szintet már játsztszotta a játékos, de kilépett,
+   akkor az actual.json fájl tartalma szerint töltődik be a játék.
+   Egyébként kiválasztja, hogy a szintből melyik pályákat kell lejátszania a játékosnak, és ezt elmenti az actual.json-be.
+   Ha a szintet sikeresen lejátszotta a játékos, akkor átirányít egy eredményeket megjelnítő oldalra.
  * @param SDL_Renderer * renderer
- * @return Page isSucceed
+ * @return Page next
  * */
 Page startGame(SDL_Renderer *renderer) {
     cJSON *currentData = getParsedJSONContentOfFile(ACTUAL_STATUS_FILE_NAME);
