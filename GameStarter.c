@@ -1,11 +1,4 @@
-#ifdef _WIN32
-
 #include <Windows.h>
-
-#else
-#include <unistd.h>
-#endif
-
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL2_gfxPrimitives.h>
@@ -59,6 +52,13 @@ void printGridForDebug(Cell **grid) {
     }
 }
 
+
+/** Beállítja a kezdőértékeit egy cím szerint átvett mezőnek (Cell).
+ * @param bool isLeft
+ * @oaram int block_id
+ * @param int rotation
+ * @param Cell *cell
+ * */
 void initCell(bool isLeft, int block_id, int rotation, Cell *cell) {
     cell->block_id = block_id;
     cell->isMoveable = !isLeft;
@@ -71,7 +71,13 @@ void initCell(bool isLeft, int block_id, int rotation, Cell *cell) {
     cell->display = true;
 }
 
-Cell **initGridStructure(const cJSON *mapdata) {
+/** Létrehozza a pálya adatait tartalmazó 2 dimenziós tömböt (táblázatot), melyben leírja,
+ * hogy melyik mezőben milyen típusú blokk található. Ezt a kapott cJSON típusú változóból állítja elő, ami egy teljes pálya
+ * összes adata. A hívó felelőssége felszabadítani a lefogalat memóriaterületet.
+ * @param cJSON *mapData
+ * @param Cell **grid
+ * */
+Cell **initGridStructure(cJSON *mapdata) {
     cJSON *leftBlocks = cJSON_GetObjectItem(mapdata, MAP_BLOCKS_ARRAY);
     cJSON *rightBlocks = cJSON_GetObjectItem(mapdata, PLACEABLE_BLOCK_ARRAY);
     Cell **grid;
@@ -82,9 +88,7 @@ Cell **initGridStructure(const cJSON *mapdata) {
         grid[i] = grid[0] + (i * (GRID_W + 1));
     }
     for (int i = 0; i < GRID_W; i++) {
-        for (int j = 0; j <= GRID_W; j++) {
-            grid[i][j].block_id = -1;
-        }
+        for (int j = 0; j <= GRID_W; j++) grid[i][j].block_id = -1;
     }
 
     for (int i = 0; i < cJSON_GetArraySize(leftBlocks); i++) {
@@ -108,6 +112,11 @@ Cell **initGridStructure(const cJSON *mapdata) {
     return grid;
 }
 
+/** Segédfüggvény, megnézi, hogy a tömb tartalmazza e az adott elemet
+ * @param int *arr
+ * @param int length
+ * @param int n
+ * */
 bool isArrayIncludes(int *arr, int length, int n) {
     for (int i = 0; i < length; i++) {
         if (arr[i] == n) return true;
@@ -115,11 +124,20 @@ bool isArrayIncludes(int *arr, int length, int n) {
     return false;
 }
 
-int *selectRandomIndexes(int length, int *array_length) {
-    if (length <= 0) return NULL;
+/** Kiválasztja véletlenszerően 5 (MAPS_IN_LEVEL) pályq indexét, qmelyek az adott szinteten játszandó pályákat fogják azonosítani
+ * a fájlból beolvasott tömbben (cJSON struktúrában). Amennyiben nincs 5 pálya a szinten, annyi pályát fog kiválasztani
+ * véletlenszerű sorrendben, ahány van.
+ * A cím szerint átvett array_length változóba írja a létrejött tömb méretét.
+ * A hívó kötelessége felszabadítani a kapott tömbre mutató memóriaterületet.
+ * @param int allMapsNum
+ *  @param int *array_length
+ *  @return int * random_indexes
+ * */
+int *selectRandomIndexes(int allMapsNum, int *array_length) {
+    if (allMapsNum <= 0) return NULL;
     srand(time(0));
 
-    *array_length = length >= MAPS_IN_A_LEVEL ? MAPS_IN_A_LEVEL : length;
+    *array_length = allMapsNum >= MAPS_IN_A_LEVEL ? MAPS_IN_A_LEVEL : allMapsNum;
 
     int *random_indexes = (int *) malloc((*array_length) * sizeof(int));
     for (int i = 0; i < *array_length; i++) random_indexes[i] = -1;
@@ -155,10 +173,16 @@ void initializeFileWithLevel(int level) {
     printStructureIntoFileAndClose(ACTUAL_STATUS_FILE_NAME, structure);
 }
 
-bool checkSolution(LaserPath *root, Cell **grid) {
+/** Megnézi, hogy jó e a pálya megoldása, úgy hogy érintett e minden blokkot a lézer, amint érintenie kellett
+ * vagyis azokat, amiket nem a játékos rakott le.
+ * @param Cell **grid
+ * @return bool isSucceed
+ * */
+bool checkSolution(Cell **grid) {
     for (int i = 0; i < GRID_W; i++) {
         for (int j = 0; j < GRID_W; j++) {
-            if (grid[i][j].block_id != -1 && grid[i][j].display && !grid[i][j].hasLaserTouchedIt) {
+            if (grid[i][j].block_id != -1 && grid[i][j].display && !grid[i][j].hasLaserTouchedIt &&
+                grid[i][j].block_id != BRICK) {
                 if (!grid[i][j].isPlacedByUser) return false;
             }
         }
@@ -166,6 +190,9 @@ bool checkSolution(LaserPath *root, Cell **grid) {
     return true;
 }
 
+/** Amennyiben van már megkezdett játék, visszatér annak a szintjével, különben -1 -gyel tér vissza.
+ * @return int level
+ * */
 int getInitializedGameLevelIfExists() {
     cJSON *currentData = getParsedJSONContentOfFile(ACTUAL_STATUS_FILE_NAME);
     if (currentData == NULL) return -1;
@@ -176,6 +203,10 @@ int getInitializedGameLevelIfExists() {
 
 }
 
+/**Visszaállítja alapértelmezett állapotba a cím szerint átvett táblázatnak a
+ * lézersugárra vonatkozó adatait, miután a lézerrel lőtt a játékos .
+ * @param Cell **grid
+ * */
 void resetGridAfterShot(Cell **grid) {
     for (int i = 0; i < GRID_W; i++) {
         for (int j = 0; j < GRID_W; j++) {
@@ -184,7 +215,11 @@ void resetGridAfterShot(Cell **grid) {
         }
     }
 }
-
+//todo áthleyezni?
+/**
+ * Felszabadítja rekrúzív módszerrel a a lézerfény útját tartalmazó bináris fát.
+ * @param LaserPath
+ * */
 void freeTree(LaserPath *r) {
     if (r == NULL) return;
     freeTree(r->next);
@@ -192,11 +227,21 @@ void freeTree(LaserPath *r) {
     free(r);
 }
 
+/** Felszabadítja a táblázatot.
+ * @param Cell **grid
+ * */
 void freeGrid(Cell **grid) {
     free(grid[0]);
     free(grid);
 }
 
+/** Beállíja a közetkező pálya adatait a megfelelő, cím szerintt átvett adatokat.
+ * a maps cJSON struktúra-töb kapott indexű eleme lesz az új pálya.
+ * @param cJSON *maps
+ * @param int mapInd
+ * @param Cell ***grid
+ * @param cJSON **actualMap
+ * */
 void selectAndLoadNextMap(cJSON *maps, int mapInd, Cell ***grid, cJSON **actualMap) {
     if (maps == NULL) return;
     if (*grid != NULL) freeGrid(*grid);
@@ -204,24 +249,23 @@ void selectAndLoadNextMap(cJSON *maps, int mapInd, Cell ***grid, cJSON **actualM
     *grid = initGridStructure(*actualMap);
 }
 
-void writeGameCounterToDisplay(SDL_Renderer *renderer, int level, int mapInd, int size, int mapId) {
-    char stringToShow[50];
+StringToDisplay * getGameCounterObj(SDL_Renderer *renderer, int level, int mapInd, int size, int mapId) {
+    char  * stringToShow = (char *) malloc(50*sizeof(char));
     int len = sprintf(stringToShow, "Szint: %d, Pálya: %d/%d, Pálya id: %d", level, mapInd, size, mapId);
     stringToShow[len] = '\0';
-    StringToDisplay msg;
-    msg.fontSize = 16;
-    msg.pos = (SDL_Rect) {550, 5, 300, 50};
-    msg.title = stringToShow;
-    msg.titleColor = (SDL_Color) {255, 255, 255, 255};
-
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-    SDL_RenderFillRect(renderer, &msg.pos);
-
-    writeTextToDisplay(renderer, &msg);
-    SDL_RenderPresent(renderer);
-
+    StringToDisplay * msg = (StringToDisplay*) malloc(sizeof(StringToDisplay));
+    msg->fontSize = 16;
+    msg->pos = (SDL_Rect) {550, 5, 300, 50};
+    msg->title = stringToShow;
+    msg->titleColor = (SDL_Color) {255, 255, 255, 255};
+    return msg;
 }
 
+/** A képernyő tetejére kiírja a kapott üzenetet.
+ * @param SDL_Renderer *renderer
+ * @param char *text
+ * @bool isSuccess
+ * */
 void writeMessageToTop(SDL_Renderer *renderer, char *text, bool isSuccess) {
     StringToDisplay msg;
     msg.fontSize = 20;
@@ -236,39 +280,91 @@ void writeMessageToTop(SDL_Renderer *renderer, char *text, bool isSuccess) {
     SDL_RenderPresent(renderer);
 }
 
-void setSelectedNumbers(cJSON *data, int *selectedMapIndexes, int size) {
-    cJSON *arr = cJSON_AddArrayToObject(data, SELECTED_MAP_INDEXES_ARR);
-    for (int i = 0; i < size; i++) {
-        cJSON_AddItemToArray(arr, cJSON_CreateNumber(selectedMapIndexes[i]));
+
+/** Beálltja, hogy milyen jutalmakat kap a játékos a teljesítménye alapján.
+ * Beállítja a cím szerint átvett változók értékeit.
+ * Egy meglévő eredmény rosszabbal nem ír felül.
+ * @param cJSON *result
+ * @param usedSkip
+ * @param elapsedTime
+ * */
+void setBadges(cJSON *result, bool usedSkip, int elapsedTime) {
+    bool hasTimeBadge = cJSON_GetObjectItem(result, HAS_TIME_BONUS_BADGE)->valueint == 1 ? true : false;
+    bool hasNoSkipBadge = cJSON_GetObjectItem(result, HAS_NO_SKIP_BADGE)->valueint == 1 ? true : false;
+    //Ha mar megszerezte előzőleg mina kettőt
+    if (hasTimeBadge && hasNoSkipBadge) return;
+    //Ha semelyik badget sem kapná meg
+    if (usedSkip && elapsedTime > TIME_BADGE_GOT_BELOW) return;
+    if (!usedSkip) {
+        cJSON_DeleteItemFromObject(result, HAS_NO_SKIP_BADGE);
+        cJSON_AddNumberToObject(result, HAS_NO_SKIP_BADGE, 1);
+    }
+    if (elapsedTime <= TIME_BADGE_GOT_BELOW && !usedSkip) {
+        cJSON_DeleteItemFromObject(result, HAS_TIME_BONUS_BADGE);
+        cJSON_AddNumberToObject(result, HAS_TIME_BONUS_BADGE, 1);
     }
 }
 
-void saveResultToFile(int level, double elapsedtime) {
-    cJSON *current = getParsedJSONContentOfFile(LEVELS_FILE_NAME);
-    if (current == NULL) {
-        current = cJSON_CreateArray();
-    }
-    cJSON *result = cJSON_CreateObject();
+/** Beállítja egyy üres, cím szerint átvett cJSON struktúra alapértelmezett érékeit úgy,
+ * hogy az a levels.json fájlnak megjeleljen.
+ * @param cJSON *result
+ * @param int level
+ * @param int elapsedTime
+ * */
+static void initEmptyResultObj(cJSON *result, int level, int elapsedTime) {
     cJSON_AddNumberToObject(result, LEVEL_STR, level);
-    cJSON_AddNumberToObject(result, ELAPSED_TIME_STR, elapsedtime);
+    cJSON_AddNumberToObject(result, ELAPSED_TIME_STR, elapsedTime);
+    cJSON_AddNumberToObject(result, HAS_NO_SKIP_BADGE, 0);
+    cJSON_AddNumberToObject(result, HAS_TIME_BONUS_BADGE, 0);
+}
+
+/**Elmenti a leves.json fájlba a előző szint teljesítésének az eredményeit.
+ * Ha jobb idő alatt teljesítette a játékos az adott pályát, akkor az eredményét azzal felülírja.
+ * @param int level
+ * @param int elapsedTime
+ * @oaram bool usedSkip
+ * @return cJSON * result
+ * */
+cJSON *saveResultToFile(int level, int elapsedTime, bool usedSkip) {
+    cJSON *finishedLevels = getParsedJSONContentOfFile(LEVELS_FILE_NAME);
+    if (finishedLevels == NULL) {
+        finishedLevels = cJSON_CreateArray();
+    }
 
     bool hasAlreadyDone = false;
-    for (int i = 0; i < cJSON_GetArraySize(current); i++) {
-        cJSON *currentItem = cJSON_GetArrayItem(current, i);
+    cJSON *result;
+    for (int i = 0; i < cJSON_GetArraySize(finishedLevels); i++) {
+        cJSON *currentItem = cJSON_GetArrayItem(finishedLevels, i);
         if (cJSON_GetObjectItem(currentItem, LEVEL_STR)->valueint == level) {
             hasAlreadyDone = true;
-            if (elapsedtime < cJSON_GetObjectItem(currentItem, ELAPSED_TIME_STR)->valuedouble) {
+            if (elapsedTime < cJSON_GetObjectItem(currentItem, ELAPSED_TIME_STR)->valuedouble) {
+                //todo record = 1
                 cJSON_DeleteItemFromObject(currentItem, ELAPSED_TIME_STR);
-                cJSON_AddNumberToObject(currentItem, ELAPSED_TIME_STR, elapsedtime);
+                cJSON_AddNumberToObject(currentItem, ELAPSED_TIME_STR, elapsedTime);
             }
+            setBadges(currentItem, usedSkip, elapsedTime);
+            result = currentItem;
         }
     }
     if (!hasAlreadyDone) {
-        cJSON_AddItemToArray(current, result);
+        result = cJSON_CreateObject();
+        initEmptyResultObj(result, level, elapsedTime);
+        setBadges(result, usedSkip, elapsedTime);
+        cJSON_AddItemToArray(finishedLevels, result);
     }
-    printStructureIntoFileAndClose(LEVELS_FILE_NAME, current);
+    printStructureIntoFileAndClose(LEVELS_FILE_NAME, finishedLevels);
+    return result;
+
+
 }
 
+/**Segédfüggvény, egy cJSON struktúrából kimásol egy tömbbot.
+ * A tömbre mutató memóriaterület felszabadítása a felhasználó felelőssége.
+ * @param cJSON * obj
+ * @param char * key
+ * @param int *size
+ * @return int *arr
+ **/
 int *getArrayFromObject(cJSON *obj, char *key, int *size) {
 
     cJSON *jsonArr = cJSON_GetObjectItem(obj, key);
@@ -282,6 +378,10 @@ int *getArrayFromObject(cJSON *obj, char *key, int *size) {
     return arr;
 }
 
+/** Növeli az idő az actual.json fájl tartalmának megfelelő cJSON struktúrában.
+ * @param cJSON *currentData
+ * @param double elapsed
+ * */
 void incrementTime(cJSON *currentData, double elapsed) {
     if (cJSON_HasObjectItem(currentData, ELAPSED_TIME_STR)) {
         double current = cJSON_GetObjectItem(currentData, ELAPSED_TIME_STR)->valuedouble;
@@ -291,20 +391,42 @@ void incrementTime(cJSON *currentData, double elapsed) {
     cJSON_AddNumberToObject(currentData, ELAPSED_TIME_STR, elapsed);
 }
 
+/** Beállítja a kiválasztott pályák indexeit a cím szerint átvett cJSON struktúra megfelelő mezőjébe. (ami az acutal.json fájl tartalma)
+ * @param cJSON *data
+ * @param int* selectedMapIndexes
+ * @param int size
+ * */
+void setSelectedNumbers(cJSON *currentData, int *selectedMapIndexes, int size) {
+    cJSON *arr = cJSON_AddArrayToObject(currentData, SELECTED_MAP_INDEXES_ARR);
+    for (int i = 0; i < size; i++) {
+        cJSON_AddItemToArray(arr, cJSON_CreateNumber(selectedMapIndexes[i]));
+    }
+}
+
+/** A játék futtatását kezeli.
+ * todo
+ * @param SDL_Renderer * renderer
+ * @param cJSON *currentData
+ * @pararm cJSON *maps
+ * */
 bool runGame(SDL_Renderer *renderer, cJSON *currentData, cJSON *maps) {
-    bool isGameFinished = false;
-    ButtonRect **buttons = createButtonsForCurrentPage(inGame);
-    int level = cJSON_GetObjectItem(currentData, LEVEL_STR)->valueint;
     int sizeOfMaps;
     int *selectedMapIndexes = getArrayFromObject(currentData, SELECTED_MAP_INDEXES_ARR, &sizeOfMaps);
     int *finishedMaps = cJSON_GetObjectItem(currentData, FINISHED_MAPS_ARR);
-    printItForDebugging(finishedMaps);
     int mapIndex = cJSON_GetArraySize(finishedMaps);
+    if (mapIndex == sizeOfMaps) {
+        free(selectedMapIndexes);
+        return true;
+    }
+    StringToDisplay * statusStrObj;
+    bool isGameFinished = false;
+    ButtonRect **buttons = createButtonsForCurrentPage(inGame);
+    int level = cJSON_GetObjectItem(currentData, LEVEL_STR)->valueint;
     bool canUseSkipButton = cJSON_GetObjectItem(currentData, USED_SKIP_BUTTON)->valueint == 1 ? false : true;
     cJSON *actualMap = NULL;
     Cell **grid = NULL;
     LaserPath *path;
-    selectAndLoadNextMap(maps, mapIndex++, &grid, &actualMap);
+    selectAndLoadNextMap(maps, selectedMapIndexes[mapIndex++], &grid, &actualMap);
     GameEvent next = restart;
     while (next != leave) {
 
@@ -316,7 +438,13 @@ bool runGame(SDL_Renderer *renderer, cJSON *currentData, cJSON *maps) {
                 break;
             case fire:
                 path = runLaser(renderer, grid);
-                if (checkSolution(path, grid)) {
+                if (path == NULL) {
+                    writeMessageToTop(renderer, "Hiba! Nincsen lehelyezve a lézerlövő.", false);
+                    Sleep(1500);
+                    next = restart;
+                    break;
+                }
+                if (checkSolution(grid)) {
                     writeMessageToTop(renderer, "Helyes megoldás. Következő pálya betöltése...", true);
 
                     if (mapIndex <= sizeOfMaps) {
@@ -333,7 +461,7 @@ bool runGame(SDL_Renderer *renderer, cJSON *currentData, cJSON *maps) {
                 Sleep(2500);
                 break;
             case skip:
-                if (canUseSkipButton || true) {
+                if (canUseSkipButton || isUserDeveloper()) {
                     writeMessageToTop(renderer, "Pálya kihagyva, új pálya betöltése..", true);
                     if (mapIndex <= sizeOfMaps) {
                         cJSON_AddItemToArray(finishedMaps, cJSON_CreateNumber(selectedMapIndexes[mapIndex - 1]));
@@ -349,30 +477,25 @@ bool runGame(SDL_Renderer *renderer, cJSON *currentData, cJSON *maps) {
                 }
                 break;
             case restart:
-                writeGameCounterToDisplay(renderer, level, mapIndex, sizeOfMaps,
+                statusStrObj = getGameCounterObj(renderer, level, mapIndex, sizeOfMaps,
                                           cJSON_GetObjectItem(actualMap, MAP_ID)->valueint);
                 writeMessageToTop(renderer, "", true);
 
                 time_t start_t, end_t;
                 time(&start_t);
-                next = runGameEvents(renderer, grid, buttons);
+                next = runGameEvents(renderer, grid, buttons, statusStrObj);
+                free(statusStrObj->title);
+                free(statusStrObj);
                 time(&end_t);
-
                 incrementTime(currentData, difftime(end_t, start_t));
                 break;
             case finished:
                 isGameFinished = true;
-                saveResultToFile(level, cJSON_GetObjectItem(currentData, ELAPSED_TIME_STR)->valuedouble);
-                cJSON_Delete(currentData);
-                currentData = NULL;
+                cJSON *result = saveResultToFile(level, cJSON_GetObjectItem(currentData, ELAPSED_TIME_STR)->valuedouble,
+                                                 !canUseSkipButton);
                 writeMessageToTop(renderer, "Szint teljesítve. Vissza a főmenübe...", true);
                 next = beforeleave;
                 Sleep(1500);
-                break;
-            case stop:
-                cJSON_Delete(currentData);
-                currentData = NULL;
-                next = beforeleave;
                 break;
             case beforeleave:
                 if (canUseSkipButton) cJSON_AddNumberToObject(currentData, USED_SKIP_BUTTON, 0);
@@ -390,7 +513,7 @@ bool runGame(SDL_Renderer *renderer, cJSON *currentData, cJSON *maps) {
     }
     return isGameFinished;
 }
-
+//todo?? másik talán
 /** Elindítja a játékot, úgy hogy előszőr betölti a szintet az actual.json fájlból, majd kiválasztaja az aktuális
  * pálylákat, és kirajzolja az elsőt. Amennyiben a játék sikeresen elindult, a pálya kirajzolódott true-val tér vissza, különben valamilyen
  * hiba esetén false-sal.
@@ -422,7 +545,7 @@ Page startGame(SDL_Renderer *renderer) {
         cJSON_AddNumberToObject(currentData, USED_SKIP_BUTTON, 0);
         cJSON_AddNumberToObject(currentData, ELAPSED_TIME_STR, 0);
     }
-    runGame(renderer, currentData, maps);
+    bool isGameFinished = runGame(renderer, currentData, maps);
 
-    return gameMenu;
+    return isGameFinished ? levelFinished : gameMenu;
 }

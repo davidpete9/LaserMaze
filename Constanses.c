@@ -7,8 +7,9 @@ const char *USED_SKIP_BUTTON = "hasSkipButtonUsed";
 const char *SELECTED_MAP_INDEXES_ARR = "selectedMapIndexes";
 const char *FINISHED_MAPS_ARR = "finishedMaps";
 const char *ELAPSED_TIME_STR = "elapsedTime";
-const char *TIME_BONUS_STR = "hasTimeBonus";
-const char *GET_TIME_BONUS_FROM = "getTimeBonusFrom";
+const char *HAS_NO_SKIP_BADGE = "hasNoSkipButtonBadge";
+const char *HAS_TIME_BONUS_BADGE = "hasTimeBonus";
+const char *IS_USER_DEVELOPER = "isUserDeveloper";
 
 const char *LEVEL_STR = "level";
 const char *MAP_ID = "id";
@@ -23,7 +24,9 @@ const char * ACTUAL_STATUS_FILE_NAME = "actual.json";
 const char * MAPS_FILENAME_FORMAT = "maps/%d_level.json";
 const char * LEVELS_FILE_NAME = "levels.json";
 const char * BACKGROUND_FILE_NAME = "hatter.jpg";
+const char * STAR_FILE_NAME = "csillag.png";
 const char * BLOCKS_TEXTURE_FILENAME_FORMAT = "blocks/%d.png";
+const char * SETTINGS_FILE_NAME = "settings.json";
 
 const SDL_Rect TABLE_RECT = (SDL_Rect) {120,50,600,600};
 const SDL_Rect RIGHT_SIDE_RECT = (SDL_Rect) {750,50,120,600};

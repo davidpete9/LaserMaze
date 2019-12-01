@@ -12,11 +12,11 @@
 #include "debugmalloc.h"
 
 /** Létrehoz egy fájlt a paraméterként kapot néven.
- * A hívó felelőssége bezáeni a fájlt az fclose() segítségével.
+ * A hívó felelőssége bezárni a fájlt az fclose() segítségével.
  * @param const char *filename
  * @return FILE *fp
  */
-FILE *OpenOrCreateFile(const char *filename) {
+FILE *openOrCreateFile(const char *filename) {
 
     FILE *fp;
     fp = fopen(filename, "wt");
@@ -28,12 +28,13 @@ FILE *OpenOrCreateFile(const char *filename) {
     return fp;
 }
 
-/**
+/** A kapott nevű fájlba beleírja az egész JSON objektumot, amit paraméterként kapott,
+   a fájl tartalmát felülírja vele.
  * @param cJSON * structure
  * @param FILE * fp
  * */
 void printStructureIntoFileAndClose(const char *filename, cJSON *structure) {
-    FILE *fp = OpenOrCreateFile(filename);
+    FILE *fp = openOrCreateFile(filename);
     fprintf(fp, cJSON_Print(structure));
     fclose(fp);
 }

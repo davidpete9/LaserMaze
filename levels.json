@@ -1,37 +1,6 @@
 [{
 		"level":	1,
-		"elapsedTime":	3
-	}, {
-		"level":	2,
-		"elapsedTime":	1
-	}, {
-		"level":	3,
-		"elapsedTime":	2
-	}, {
-		"level":	4,
-		"elapsedTime":	1
-	}, {
-		"level":	5,
-		"elapsedTime":	2
-	}, {
-		"level":	6,
-		"elapsedTime":	1
-	}, {
-		"level":	7,
-		"elapsedTime":	6
-	}, {
-		"level":	8,
-		"elapsedTime":	3
-	}, {
-		"level":	9,
-		"elapsedTime":	3
-	}, {
-		"level":	10,
-		"elapsedTime":	1
-	}, {
-		"level":	11,
-		"elapsedTime":	2
-	}, {
-		"level":	12,
-		"elapsedTime":	5
+		"elapsedTime":	72,
+		"hasNoSkipButtonBadge":	0,
+		"hasTimeBonus":	0
 	}]

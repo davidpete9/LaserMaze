@@ -47,25 +47,29 @@ typedef struct LaserPath {
 } LaserPath;
 
 
-Cell **initGridStructure(const cJSON *mapdata);
+Cell **initGridStructure(cJSON *mapdata);
 char *generateFormattedStringFromNumber(int num, const char *format);
+int *getArrayFromObject(cJSON *obj, char *key, int *size);
 cJSON *getMapsForLevel(int level);
-cJSON *selectRandomMaps(cJSON *allMap);
-bool checkSolution(LaserPath * root, Cell ** grid);
+cJSON *saveResultToFile(int level, int elapsedTime, bool usedSkip);
+int *selectRandomIndexes(int allMapsNum, int *array_length);
+bool checkSolution(Cell **grid);
 void freeGrid(Cell **grid);
 void freeTree(LaserPath *r);
+int getInitializedGameLevelIfExists();
+void incrementTime(cJSON *currentData, double elapsed);
 void initCell(bool isLeft, int block_id, int rotation, Cell *cell);
+static void initEmptyResultObj(cJSON *result, int level, int elapsedTime);
 void initializeFileWithLevel(int level);
-bool isArrayIncludes(int * arr, int length, int n);
+bool isArrayIncludes(int *arr, int length, int n);
 void printGridForDebug(Cell **grid);
 void resetGridAfterShot(Cell **grid);
-void selectAndLoadNextMap(cJSON * maps, int mapInd, Cell ***grid, cJSON **actualMap);
-int * selectRandomIndexes(int length, int * array_length);
-void setGameInitalizationStatus(cJSON *structure, bool val);
-void setLevel(cJSON *structure, int level);
+bool runGame(SDL_Renderer *renderer, cJSON *currentData, cJSON *maps);
+void selectAndLoadNextMap(cJSON *maps, int mapInd, Cell ***grid, cJSON **actualMap);
+void setBadges(cJSON *result, bool usedSkip, int elapsedTime);
+void setSelectedNumbers(cJSON *data, int *selectedMapIndexes, int size);
 Page startGame(SDL_Renderer *renderer);
-int getInitializedGameLevelIfExists();
-void writeGameCounterToDisplay(SDL_Renderer *renderer, int level, int mapInd, int size, int mapId);
-void writeMessageToTop(SDL_Renderer *renderer, char * text, bool isSuccess);
+StringToDisplay * getGameCounterObj(SDL_Renderer *renderer, int level, int mapInd, int size, int mapId);
+void writeMessageToTop(SDL_Renderer *renderer, char *text, bool isSuccess);
 
 #endif // GAMESTARTER_H_INCLUDED

@@ -213,5 +213,54 @@
          "block_rotation":2
       }
    ]
+},
+{
+   "id":812,
+   "blocks_on_grid":[
+      {
+         "block_id":2,
+         "block_row":1,
+         "block_col":1,
+         "block_rotation":1
+      },
+      {
+         "block_id":2,
+         "block_row":1,
+         "block_col":5,
+         "block_rotation":2
+      },
+      {
+         "block_id":2,
+         "block_row":5,
+         "block_col":5,
+         "block_rotation":3
+      },
+      {
+         "block_id":2,
+         "block_row":5,
+         "block_col":1,
+         "block_rotation":0
+      },
+      {
+         "block_id":999,
+         "block_row":3,
+         "block_col":3,
+         "block_rotation":1
+      }
+   ],
+   "placeable_blocks":[
+      {
+         "block_id":111,
+         "block_row":5,
+         "block_col":1,
+         "block_rotation":2
+      },
+      {
+         "block_id":2,
+         "block_row":4,
+         "block_col":1,
+         "block_rotation":0
+      }
+   ]
 }
 ]

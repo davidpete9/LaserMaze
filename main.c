@@ -27,8 +27,8 @@ int main(int argc, char *argv[]) {
         SDL_Log("Nem hozhato letre a megjelenito: %s", SDL_GetError());
         exit(1);
     }
-    drawBackground(renderer);
 
+    drawBackground(renderer);
     Page next = runMenuPage(renderer, mainMenu);
     while (next != -1 && next != exitgame) {
         if (next == inGame) {

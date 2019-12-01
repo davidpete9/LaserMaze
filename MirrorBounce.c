@@ -16,7 +16,7 @@ Direction getLaserCannonDirection(int rotation) {
     }
 }
 
-Direction getTwoSidedWindowDirection(Direction from, int rotation) {
+Direction getTwoSidedMirrorDirection(Direction from, int rotation) {
     //ebben esetben eleg csak 2 allapotot kulonboztetunk meg.
     rotation %= 2;
     if (rotation == 0) {
@@ -27,20 +27,20 @@ Direction getTwoSidedWindowDirection(Direction from, int rotation) {
     return from == east ? north : east;
 }
 
-Direction getWindowDirection(Direction from, int rotation) {
+Direction getMirrorDirection(Direction from, int rotation) {
         switch(rotation) {
             case 0:
                 if (from == west || from == north) return nowhere;
-                return getTwoSidedWindowDirection(from, rotation);
+                return getTwoSidedMirrorDirection(from, rotation);
             case 1:
                 if (from == north || from == east) return nowhere;
-                return getTwoSidedWindowDirection(from, rotation);
+                return getTwoSidedMirrorDirection(from, rotation);
             case 2:
                if (from == south || from == east) return nowhere;
-                return getTwoSidedWindowDirection(from, rotation);
+                return getTwoSidedMirrorDirection(from, rotation);
             case 3:
                 if (from == west || from == south) return nowhere;
-                return getTwoSidedWindowDirection(from, rotation);
+                return getTwoSidedMirrorDirection(from, rotation);
             default:
                 return nowhere;
     }
@@ -50,19 +50,19 @@ Direction findDirection(Direction from, int block_type, int rotation) {
     switch (block_type) {
         case LASER_CANNON:
             return nowhere;
-        case ONE_SIDED_WINDOW:
-            return getWindowDirection(from, (rotation+3)%4);
-        case TWO_SIDED_WINDOW:
-            return getTwoSidedWindowDirection(from, (rotation+1)%4);
+        case ONE_SIDED_MIRROR:
+            return getMirrorDirection(from, (rotation+3)%4);
+        case TWO_SIDED_MIRROR:
+            return getTwoSidedMirrorDirection(from, (rotation+1)%4);
         case BRICK:
             return nowhere;
         case GOAL_BLOCK:
                //Mivel a rajzon alapbol kettovel oebb van fotrgatva mint a tükör,
                //és hogy lehessen rajta használni az előző függvényeket. Felfogható egy egyoldalú tükörnek.
-               return getWindowDirection(from, (rotation+3)%4);
-        case DOUBLE_REFLECTION_WINDOW:
+               return getMirrorDirection(from, (rotation+3)%4);
+        case DOUBLE_REFLECTION_MIRROR:
             //Mivel a rajzon egyel odebb van. A masik reflexiot nem ez a fuggveny fogja kezelni.
-            return getTwoSidedWindowDirection(from, rotation);
+            return getTwoSidedMirrorDirection(from, rotation);
         default:
             return nowhere;
     }

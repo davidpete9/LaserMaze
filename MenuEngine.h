@@ -3,7 +3,7 @@
 #define LASERMAZE_MENUENGINE_H
 
 typedef enum Page {
-    mainMenu, settings, gameMenu, inGame, exitgame
+    mainMenu, settings, gameMenu, inGame, levelFinished, gameFinished, exitgame
 } Page;
 
 typedef struct StringToDisplay {
@@ -44,7 +44,7 @@ int calculateSuitableFontSizeInBtn(SDL_Rect pos);
 * @param ButtonRect ** buttons,
 * @param Page currentPage
 * */
-void drawAllCurrentButtons(SDL_Renderer *renderer, ButtonRect **buttons, Page currentPage);
+void drawAllCurrentButtons(SDL_Renderer *renderer, ButtonRect **button, int btnNum);
 /**
 * Kirajzolja az adott gombot a képernyőre
 * @param SDL_Renderer * render
@@ -129,6 +129,9 @@ void setBtnTitlePos(SDL_Rect *strPos, SDL_Rect pos);
 * @param const StringToDisplay * strObj
 * */
 void writeTextToDisplay(SDL_Renderer *renderer, const StringToDisplay *strObj);
-
+ButtonRect ** createSettingsMenuButtons();
+void handleSettingsClick(int buttonId);
+bool isUserDeveloper();
+void writeMessagesToSettings(SDL_Renderer *renderer);
 
 #endif //LASERMAZE_MENUENGINE_H

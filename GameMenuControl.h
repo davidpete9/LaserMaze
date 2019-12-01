@@ -6,7 +6,9 @@ Page clickedOnLevel(int btnId);
 ButtonRect ** createInGameButtons();
 int getCurrentLevel();
 bool isLevelAlreadyDone(int level);
-void markLevelButtonIfPlayable(int level, ButtonRect * btn);
-void refreshButtonColors(ButtonRect ** btns);
+void refreshButtonColors( ButtonRect ** btns);
+void drawStarsForLevels(SDL_Renderer * renderer, ButtonRect ** btns);
+void drawResultsToFinishPage(SDL_Renderer *renderer);
+void drawGameFinishedPage(SDL_Renderer * renderer);
 
 #endif // GAMEMENUCONTROL_H_INCLUDED
